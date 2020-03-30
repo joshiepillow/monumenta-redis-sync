@@ -2,6 +2,8 @@ package com.playmonumenta.redissync;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.playmonumenta.redissync.adapters.RedisDedicatedPlayerList1132;
+
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -15,6 +17,15 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	@Override
 	public void onLoad() {
+		/* Replace the DedicatedServerList as early as possible during load */
+		try {
+			RedisDedicatedPlayerList1132.inject(getLogger());
+			INSTANCE = this;
+		} catch (Exception ex) {
+			getLogger().severe("Failed to inject player list: " + ex.getMessage());
+			ex.printStackTrace();
+		}
+
 		/*
 		 * CommandAPI commands which register directly and are usable in functions
 		 *
@@ -22,14 +33,11 @@ public class MonumentaRedisSync extends JavaPlugin {
 		 */
 	}
 
-	//  Logic that is performed upon enabling the plugin.
 	@Override
 	public void onEnable() {
 		pool = new JedisPool(new JedisPoolConfig(), "redis", 6379);
-		INSTANCE = this;
 	}
 
-	//  Logic that is performed upon disabling the plugin.
 	@Override
 	public void onDisable() {
 		pool.close();
