@@ -24,7 +24,10 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+		INSTANCE = this;
 		pool = new JedisPool(new JedisPoolConfig(), "redis", 6379);
+
+		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
 	}
 
 	@Override
