@@ -39,11 +39,9 @@
         </dependency>
         <!-- This one needs to be shaded in! -->
         <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>3.2.0</version>
-            <type>jar</type>
-            <scope>compile</scope>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>5.0.1.RELEASE</version>
         </dependency>
     </dependencies>
 
@@ -153,8 +151,28 @@
                     </transformers>
                     <relocations>
                         <relocation>
-                            <pattern>redis.clients.jedis</pattern>
-                            <shadedPattern>com.monumenta.redissync.internal.jedis</shadedPattern>
+                            <pattern>io.lettuce</pattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.lettuce</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>io.netty</pattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.netty</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.reactivestreams</pattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.reactivestreams</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>reactor.adapter</pattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.reactor.adapter</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>reactor.core</pattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.reactor.core</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>reactor.util</pattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.reactor.util</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>

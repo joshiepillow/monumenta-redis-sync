@@ -18,11 +18,22 @@ public class DataEventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
+		/* TODO: Decrease verbosity */
 		mLogger.info("Loading advancements data for player=" + event.getPlayer().getUniqueId().toString());
+
+		String jsonData = RedisAPI.sync().get("user:" + event.getPlayer().getUniqueId().toString() + ":advancements");
+		if (jsonData != null) {
+			event.setJsonData(jsonData);
+		} else {
+			mLogger.warning("No advancements data for player '" + event.getPlayer().getUniqueId().toString() + "' - if they are not new, this is a serious error!");
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataSaveEvent(PlayerAdvancementDataSaveEvent event) {
+		/* TODO: Decrease verbosity */
 		mLogger.info("Saving advancements data for player=" + event.getPlayer().getUniqueId().toString() + " : " + event.getJsonData());
+
+		RedisAPI.sync().set("user:" + event.getPlayer().getUniqueId().toString() + ":advancements", event.getJsonData());
 	}
 }

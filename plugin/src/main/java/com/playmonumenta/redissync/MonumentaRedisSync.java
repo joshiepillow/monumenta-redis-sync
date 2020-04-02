@@ -2,12 +2,9 @@ package com.playmonumenta.redissync;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
 public class MonumentaRedisSync extends JavaPlugin {
-	public static JedisPool pool;
 	private static MonumentaRedisSync INSTANCE = null;
+	private RedisAPI mRedisAPI = null;
 
 	public static MonumentaRedisSync getInstance() {
 		return INSTANCE;
@@ -25,15 +22,22 @@ public class MonumentaRedisSync extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		INSTANCE = this;
-		pool = new JedisPool(new JedisPoolConfig(), "redis", 6379);
 
-		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
+		try {
+			mRedisAPI = new RedisAPI(getLogger(), "redis://password@redis:6379/");
+
+			getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
+		} catch (Exception ex) {
+			getLogger().severe("Failed to instantiate redis manager: " + ex.getMessage());
+			ex.printStackTrace();
+		}
 	}
 
 	@Override
 	public void onDisable() {
-		pool.close();
 		INSTANCE = null;
+		mRedisAPI.shutdown();
+		mRedisAPI = null;
 		getServer().getScheduler().cancelTasks(this);
 	}
 }
