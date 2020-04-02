@@ -22,15 +22,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		INSTANCE = this;
-
-		try {
-			mRedisAPI = new RedisAPI(getLogger(), "redis://password@redis:6379/");
-
-			getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
-		} catch (Exception ex) {
-			getLogger().severe("Failed to instantiate redis manager: " + ex.getMessage());
-			ex.printStackTrace();
-		}
+		new Conf(this);
+		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
+		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
 	}
 
 	@Override
