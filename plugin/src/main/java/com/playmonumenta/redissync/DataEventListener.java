@@ -1,5 +1,6 @@
 package com.playmonumenta.redissync;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,6 +17,7 @@ import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
 import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
+import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 
 public class DataEventListener implements Listener {
 	private static DataEventListener INSTANCE = null;
@@ -60,6 +62,7 @@ public class DataEventListener implements Listener {
 		mLogger.info("Saving advancements data for player=" + player.getName());
 		mLogger.finer("Data:" + event.getJsonData());
 		RedisAPI.sync().lpush(getRedisAdvancementsPath(player), event.getJsonData());
+		event.setCancelled(true);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -68,15 +71,31 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading data for player=" + player.getName());
 
-		String b64 = RedisAPI.sync().lindex(getRedisDataPath(player), 0);
-		/* TODO: Decrease verbosity */
-		mLogger.info("Data: " + b64);
-
-		byte[] data = decode(b64);
-		if (data != null) {
-			event.setData(data);
-		} else {
+		/* Load the primary shared NBT data */
+		byte[] data = RedisAPI.syncStringBytes().lindex(getRedisDataPath(player), 0);
+		if (data == null) {
 			mLogger.warning("No data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
+			return;
+		}
+		/* TODO: Decrease verbosity */
+		mLogger.info("data: " + b64encode(data));
+
+		/* Load the per-shard data */
+		String shardData = RedisAPI.sync().hget(getRedisPerShardDataPath(player), Conf.getShard());
+		if (shardData == null) {
+			/* This is not an error - this will happen whenever a player first visits a new shard */
+			/* TODO: Decrease Verbosity */
+			mLogger.info("Player '" + player.getName() + "' has never been to this shard before");
+		} else {
+			mLogger.info("sharddata: " + shardData);
+		}
+
+		try {
+			Object nbtTagCompound = MonumentaRedisSync.getVersionAdapter().retrieveSaveData(player, data, shardData);
+			event.setData(nbtTagCompound);
+		} catch (IOException ex) {
+			mLogger.severe("Failed to load player data: " + ex.toString());
+			ex.printStackTrace();
 		}
 	}
 
@@ -90,11 +109,21 @@ public class DataEventListener implements Listener {
 
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving data for player=" + player.getName());
-		String b64 = encode(event.getData());
 
-		/* TODO: Decrease verbosity */
-		mLogger.info("Data: " + b64);
-		RedisAPI.sync().lpush(getRedisDataPath(player), b64);
+		try {
+			SaveData data = MonumentaRedisSync.getVersionAdapter().extractSaveData(player, event.getData());
+
+			/* TODO: Decrease verbosity */
+			mLogger.info("data: " + b64encode(data.getData()));
+			mLogger.info("sharddata: " + data.getShardData());
+			RedisAPI.syncStringBytes().lpush(getRedisDataPath(player), data.getData());
+			RedisAPI.sync().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData());
+
+			event.setCancelled(true);
+		} catch (IOException ex) {
+			mLogger.severe("Failed to save player data: " + ex.toString());
+			ex.printStackTrace();
+		}
 	}
 
 	public static void disableDataSavingUntilNextLogin(Player player) {
@@ -105,14 +134,15 @@ public class DataEventListener implements Listener {
 		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
 	}
 
+	private String getRedisPerShardDataPath(Player player) {
+		return String.format("%s:playerdata:%s:sharddata", Conf.getDomain(), player.getUniqueId().toString());
+	}
+
 	private String getRedisAdvancementsPath(Player player) {
 		return String.format("%s:playerdata:%s:advancements", Conf.getDomain(), player.getUniqueId().toString());
 	}
 
-	private static String encode(byte[] data) {
+	private static String b64encode(byte[] data) {
 		return Base64.getEncoder().encodeToString(data);
-	}
-	private static byte[] decode(String str) {
-		return Base64.getDecoder().decode(str);
 	}
 }

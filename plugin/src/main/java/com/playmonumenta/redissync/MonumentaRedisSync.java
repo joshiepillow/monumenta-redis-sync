@@ -2,9 +2,13 @@ package com.playmonumenta.redissync;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.playmonumenta.redissync.adapters.VersionAdapter;
+import com.playmonumenta.redissync.adapters.VersionAdapter113;
+
 public class MonumentaRedisSync extends JavaPlugin {
 	private static MonumentaRedisSync INSTANCE = null;
 	private RedisAPI mRedisAPI = null;
+	private VersionAdapter mVersionAdapter = null;
 
 	public static MonumentaRedisSync getInstance() {
 		return INSTANCE;
@@ -25,6 +29,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		new Conf(this);
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
 		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
+		mVersionAdapter = new VersionAdapter113();
 	}
 
 	@Override
@@ -33,5 +38,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 		mRedisAPI.shutdown();
 		mRedisAPI = null;
 		getServer().getScheduler().cancelTasks(this);
+	}
+
+	public static VersionAdapter getVersionAdapter() {
+		return INSTANCE.mVersionAdapter;
 	}
 }
