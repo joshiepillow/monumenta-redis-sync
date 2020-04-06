@@ -2,5 +2,6 @@ name: MonumentaRedisSync
 main: com.playmonumenta.redissync.MonumentaRedisSync
 version: 0.0.1
 api-version: 1.13
+author: Combustible
 depend: [CommandAPI]
 softdepend: []

@@ -1,9 +1,11 @@
-package com.playmonumenta.redissync;
+package com.playmonumenta.redissync.api;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import org.bukkit.entity.Player;
+
+import com.playmonumenta.redissync.DataEventListener;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
@@ -62,7 +64,7 @@ public class RedisAPI {
 	/*
 	 * Do not call this outside Plugin.java onDisable()
 	 */
-	protected void shutdown() {
+	public void shutdown() {
 		mConnection.close();
 		mConnection = null;
 		mRedisClient.shutdown();

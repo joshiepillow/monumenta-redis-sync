@@ -18,6 +18,7 @@ import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
 import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
+import com.playmonumenta.redissync.api.RedisAPI;
 
 public class DataEventListener implements Listener {
 	private static DataEventListener INSTANCE = null;
