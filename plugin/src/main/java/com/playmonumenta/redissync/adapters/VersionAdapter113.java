@@ -3,11 +3,14 @@ package com.playmonumenta.redissync.adapters;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.v1_13_R2.CraftServer;
+import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import com.google.gson.Gson;
@@ -15,11 +18,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import net.minecraft.server.v1_13_R2.EntityPlayer;
 import net.minecraft.server.v1_13_R2.NBTCompressedStreamTools;
 import net.minecraft.server.v1_13_R2.NBTTagCompound;
 import net.minecraft.server.v1_13_R2.NBTTagDouble;
 import net.minecraft.server.v1_13_R2.NBTTagFloat;
 import net.minecraft.server.v1_13_R2.NBTTagList;
+import net.minecraft.server.v1_13_R2.PlayerList;
 
 public class VersionAdapter113 implements VersionAdapter {
 	private Gson mGson = new Gson();
@@ -51,6 +56,36 @@ public class VersionAdapter113 implements VersionAdapter {
 		}
 
 		return nbt;
+	}
+
+	public SaveData extractSaveData(Player player, Object nbtObj) throws IOException {
+		NBTTagCompound nbt = (NBTTagCompound) nbtObj;
+
+		JsonObject obj = new JsonObject();
+		copyInt(obj, nbt, "SpawnX");
+		copyInt(obj, nbt, "SpawnY");
+		copyInt(obj, nbt, "SpawnZ");
+		copyBool(obj, nbt, "SpawnForced");
+		copyStr(obj, nbt, "SpawnWorld");
+		copyBool(obj, nbt, "FallFlying");
+		copyFloat(obj, nbt, "FallDistance");
+		copyBool(obj, nbt, "OnGround");
+		copyInt(obj, nbt, "Dimension");
+		copyDoubleList(obj, nbt, "Pos");
+		copyDoubleList(obj, nbt, "Motion");
+		copyFloatList(obj, nbt, "Rotation");
+
+		ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+		NBTCompressedStreamTools.a(nbt, new Base64OutputStream(outBytes));
+		return new SaveData(outBytes.toByteArray(), obj.toString());
+	}
+
+	public void savePlayer(Player player) throws Exception {
+		PlayerList playerList = ((CraftServer)Bukkit.getServer()).getHandle();
+
+		Method method = PlayerList.class.getDeclaredMethod("savePlayerFile", EntityPlayer.class);
+		method.setAccessible(true);
+		method.invoke(playerList, ((CraftPlayer)player).getHandle());
 	}
 
 	protected NBTTagList toDoubleList(double... doubles) {
@@ -163,27 +198,5 @@ public class VersionAdapter113 implements VersionAdapter {
 			obj.add(key, arr);
 			nbt.remove(key);
 		}
-	}
-
-	public SaveData extractSaveData(Player player, Object nbtObj) throws IOException {
-		NBTTagCompound nbt = (NBTTagCompound) nbtObj;
-
-		JsonObject obj = new JsonObject();
-		copyInt(obj, nbt, "SpawnX");
-		copyInt(obj, nbt, "SpawnY");
-		copyInt(obj, nbt, "SpawnZ");
-		copyBool(obj, nbt, "SpawnForced");
-		copyStr(obj, nbt, "SpawnWorld");
-		copyBool(obj, nbt, "FallFlying");
-		copyFloat(obj, nbt, "FallDistance");
-		copyBool(obj, nbt, "OnGround");
-		copyInt(obj, nbt, "Dimension");
-		copyDoubleList(obj, nbt, "Pos");
-		copyDoubleList(obj, nbt, "Motion");
-		copyFloatList(obj, nbt, "Rotation");
-
-		ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
-		NBTCompressedStreamTools.a(nbt, new Base64OutputStream(outBytes));
-		return new SaveData(outBytes.toByteArray(), obj.toString());
 	}
 }

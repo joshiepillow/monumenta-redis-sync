@@ -25,4 +25,5 @@ public interface VersionAdapter {
 
 	Object retrieveSaveData(Player player, byte[] data, String shardData) throws IOException;
 	SaveData extractSaveData(Player player, Object nbtObj) throws IOException;
+	void savePlayer(Player player) throws Exception;
 }

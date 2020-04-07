@@ -11,7 +11,9 @@ import org.bukkit.plugin.Plugin;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.playmonumenta.redissync.Conf;
+import com.playmonumenta.redissync.MonumentaRedisSync;
 import com.playmonumenta.redissync.api.PlayerServerTransferEvent;
 
 import io.github.jorelali.commandapi.api.CommandAPI;
@@ -42,7 +44,7 @@ public class TransferServer {
 		);
 	}
 
-	private static void sendPlayer(Plugin plugin, Player player, String target) {
+	private static void sendPlayer(Plugin plugin, Player player, String target) throws CommandSyntaxException {
 		if (target.equalsIgnoreCase(Conf.getShard())) {
 			error(player, "Can not transfer to the same server you are already on");
 			return;
@@ -58,7 +60,14 @@ public class TransferServer {
 
 		/* TODO: Lock data */
 
-		player.saveData();
+		try {
+			MonumentaRedisSync.getVersionAdapter().savePlayer(player);
+		} catch (Exception ex) {
+			String message = "Failed to save player data for player '" + player.getName() + "'";
+			plugin.getLogger().severe(message);
+			ex.printStackTrace();
+			CommandAPI.fail(message);
+		}
 
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Connect");
