@@ -16,18 +16,9 @@ public class MonumentaRedisSyncBungee extends Plugin {
 	}
 
 	@Override
-	public void onLoad() {
-		/*
-		 * CommandAPI commands which register directly and are usable in functions
-		 *
-		 * These need to register immediately on load to prevent function loading errors
-		 */
-	}
-
-	@Override
 	public void onEnable() {
 		INSTANCE = this;
-		new Conf(getDataFolder(), true);
+		new Conf(this.getDataFolder(), true);
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
 		mVersionAdapter = new VersionAdapter113();
 	}

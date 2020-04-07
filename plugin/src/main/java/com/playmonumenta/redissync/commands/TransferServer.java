@@ -7,7 +7,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import com.playmonumenta.redissync.Conf;
 import com.playmonumenta.redissync.api.PlayerServerTransferEvent;
 
@@ -20,14 +23,11 @@ import io.github.jorelali.commandapi.api.arguments.StringArgument;
 
 public class TransferServer {
 	@SuppressWarnings("unchecked")
-	public static void register() {
+	public static void register(Plugin plugin) {
 		String command = "transferserver";
 		CommandPermission perms = CommandPermission.fromString("monumenta.command.transferserver");
-
-		/* No-argument variant to get server list */
 		LinkedHashMap<String, Argument> arguments;
 
-		/* Transfer with data by default */
 		arguments = new LinkedHashMap<>();
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
 		arguments.put("server", new StringArgument());
@@ -35,30 +35,38 @@ public class TransferServer {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
-		                                      sendPlayer((Collection<Player>)args[0], (String)args[1]);
+											  for (Player player : (Collection<Player>)args[0]) {
+												  sendPlayer(plugin, player, (String)args[1]);
+											  }
 		                                  }
 		);
 	}
 
-	private static void sendPlayer(Collection<Player> players, String target) {
-		for (Player player : players) {
-			if (target.equalsIgnoreCase(Conf.getShard())) {
-				error(player, "Can not transfer to the same server you are already on");
-				continue;
-			}
-
-			PlayerServerTransferEvent event = new PlayerServerTransferEvent(player, target);
-			Bukkit.getPluginManager().callEvent(event);
-			if (event.isCancelled()) {
-				return;
-			}
-
-			player.sendMessage(ChatColor.GOLD + "Transferring you to " + target);
-
-			player.saveData();
-
-			/* ???? */
+	private static void sendPlayer(Plugin plugin, Player player, String target) {
+		if (target.equalsIgnoreCase(Conf.getShard())) {
+			error(player, "Can not transfer to the same server you are already on");
+			return;
 		}
+
+		PlayerServerTransferEvent event = new PlayerServerTransferEvent(player, target);
+		Bukkit.getPluginManager().callEvent(event);
+		if (event.isCancelled()) {
+			return;
+		}
+
+		player.sendMessage(ChatColor.GOLD + "Transferring you to " + target);
+
+		/* TODO: Lock data */
+
+		player.saveData();
+
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Connect");
+		out.writeUTF(target);
+
+		player.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+
+		/* TODO: Timeout if it fails and unlock */
 	}
 
 	protected static void error(CommandSender sender, String msg) {
