@@ -3,10 +3,6 @@ package com.playmonumenta.redissync.api;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-import org.bukkit.entity.Player;
-
-import com.playmonumenta.redissync.DataEventListener;
-
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
@@ -89,9 +85,5 @@ public class RedisAPI {
 
 	public static boolean isReady() {
 		return mConnection.isOpen();
-	}
-
-	public static void disableDataSavingUntilNextLogin(Player player) {
-		DataEventListener.disableDataSavingUntilNextLogin(player);
 	}
 }

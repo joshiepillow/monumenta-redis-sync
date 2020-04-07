@@ -28,17 +28,28 @@ public class DataEventListener implements Listener {
 	private static DataEventListener INSTANCE = null;
 
 	private final Logger mLogger;
-	private final Set<UUID> mSaveDisabledPlayers = new HashSet<UUID>();
+	private final Set<UUID> mTransferringPlayers = new HashSet<UUID>();
 
 	public DataEventListener(Logger logger) {
 		mLogger = logger;
 		INSTANCE = this;
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void playerJoinEvent(PlayerJoinEvent event) {
-		mSaveDisabledPlayers.remove(event.getPlayer().getUniqueId());
+	/********************* Public API *********************/
+
+	public static void setPlayerAsTransferring(Player player) {
+		INSTANCE.mTransferringPlayers.add(player.getUniqueId());
 	}
+
+	public static void setPlayerAsNotTransferring(Player player) {
+		INSTANCE.mTransferringPlayers.remove(player.getUniqueId());
+	}
+
+	public static boolean isPlayerTransferring(Player player) {
+		return INSTANCE.mTransferringPlayers.contains(player.getUniqueId());
+	}
+
+	/********************* Data Save/Load Event Handlers *********************/
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
@@ -75,8 +86,9 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataSaveEvent(PlayerAdvancementDataSaveEvent event) {
 		Player player = event.getPlayer();
-		if (mSaveDisabledPlayers.contains(player.getUniqueId())) {
+		if (isPlayerTransferring(player)) {
 			mLogger.fine("Ignoring PlayerAdvancementDataSaveEvent for player:" + player.getName());
+			event.setCancelled(true);
 			return;
 		}
 
@@ -90,8 +102,7 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving scoreboard data for player=" + player.getName());
 		String data = ScoreboardUtils.getAsJsonObject(player).toString();
-		/* TODO: Decrease verbosity */
-		mLogger.info("Data:" + data);
+		mLogger.finer("Data:" + data);
 		RedisAPI.sync().lpush(getRedisScoresPath(player), data);
 
 		event.setCancelled(true);
@@ -132,8 +143,9 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerDataSaveEvent(PlayerDataSaveEvent event) {
 		Player player = event.getPlayer();
-		if (mSaveDisabledPlayers.contains(player.getUniqueId())) {
+		if (isPlayerTransferring(player)) {
 			mLogger.fine("Ignoring PlayerDataSaveEvent for player:" + player.getName());
+			event.setCancelled(true);
 			return;
 		}
 
@@ -155,9 +167,14 @@ public class DataEventListener implements Listener {
 		}
 	}
 
-	public static void disableDataSavingUntilNextLogin(Player player) {
-		INSTANCE.mSaveDisabledPlayers.add(player.getUniqueId());
+	/********************* Transferring Restriction Event Handlers *********************/
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void playerJoinEvent(PlayerJoinEvent event) {
+		setPlayerAsNotTransferring(event.getPlayer());
 	}
+
+	/********************* Private Utility Methods *********************/
 
 	private String getRedisDataPath(Player player) {
 		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
