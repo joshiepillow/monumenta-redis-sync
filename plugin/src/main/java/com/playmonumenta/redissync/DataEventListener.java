@@ -7,11 +7,38 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerBedEnterEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.projectiles.ProjectileSource;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
@@ -169,12 +196,143 @@ public class DataEventListener implements Listener {
 
 	/********************* Transferring Restriction Event Handlers *********************/
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void playerJoinEvent(PlayerJoinEvent event) {
 		setPlayerAsNotTransferring(event.getPlayer());
 	}
 
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerInteractEvent(PlayerInteractEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void blockPlaceEvent(BlockPlaceEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerInteractEntityEvent(PlayerInteractEntityEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerArmorStandManipulateEvent(PlayerArmorStandManipulateEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerDropItemEvent(PlayerDropItemEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerSwapHandItemsEvent(PlayerSwapHandItemsEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerFishEvent(PlayerFishEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerItemConsumeEvent(PlayerItemConsumeEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerItemDamageEvent(PlayerItemDamageEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerBedEnterEvent(PlayerBedEnterEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void playerGameModeChangeEvent(PlayerGameModeChangeEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void blockBreakEvent(BlockBreakEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void entityPickupItemEvent(EntityPickupItemEvent event) {
+		cancelEventIfTransferring(event.getEntity(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void inventoryClickEvent(InventoryClickEvent event) {
+		cancelEventIfTransferring(event.getWhoClicked(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void inventoryDragEvent(InventoryDragEvent event) {
+		cancelEventIfTransferring(event.getWhoClicked(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void inventoryOpenEvent(InventoryOpenEvent event) {
+		cancelEventIfTransferring(event.getPlayer(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void inventoryInteractEvent(InventoryInteractEvent event) {
+		cancelEventIfTransferring(event.getWhoClicked(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void entityCombustByEntityEvent(EntityCombustByEntityEvent event) {
+		cancelEventIfTransferring(event.getEntity(), event);
+		cancelEventIfTransferring(event.getCombuster(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void entityDamageByEntityEvent(EntityDamageByEntityEvent event) {
+		cancelEventIfTransferring(event.getEntity(), event);
+		cancelEventIfTransferring(event.getDamager(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void entityDamageEvent(EntityDamageEvent event) {
+		cancelEventIfTransferring(event.getEntity(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void hangingBreakByEntityEvent(HangingBreakByEntityEvent event) {
+		cancelEventIfTransferring(event.getRemover(), event);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void projectileLaunchEvent(ProjectileLaunchEvent event) {
+		ProjectileSource shooter = event.getEntity().getShooter();
+		if (shooter != null && shooter instanceof Player) {
+			cancelEventIfTransferring((Player)shooter, event);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void potionSplashEvent(PotionSplashEvent event) {
+		event.getAffectedEntities().removeIf(entity -> (entity instanceof Player && isPlayerTransferring((Player)entity)));
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void areaEffectCloudApplyEvent(AreaEffectCloudApplyEvent event) {
+		event.getAffectedEntities().removeIf(entity -> (entity instanceof Player && isPlayerTransferring((Player)entity)));
+	}
+
 	/********************* Private Utility Methods *********************/
+
+	private void cancelEventIfTransferring(Entity entity, Cancellable event) {
+		if (entity != null && entity instanceof Player && isPlayerTransferring((Player)entity)) {
+			event.setCancelled(true);
+		}
+	}
 
 	private String getRedisDataPath(Player player) {
 		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
