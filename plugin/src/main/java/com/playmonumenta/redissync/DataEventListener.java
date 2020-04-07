@@ -17,10 +17,14 @@ import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
 import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 import com.playmonumenta.redissync.api.RedisAPI;
+import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
 public class DataEventListener implements Listener {
+	private Gson mGson = new Gson();
 	private static DataEventListener INSTANCE = null;
 
 	private final Logger mLogger;
@@ -39,15 +43,32 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
 		Player player = event.getPlayer();
+
+		/* Advancements */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading advancements data for player=" + player.getName());
-
 		String jsonData = RedisAPI.sync().lindex(getRedisAdvancementsPath(player), 0);
 		mLogger.finer("Data:" + jsonData);
 		if (jsonData != null) {
 			event.setJsonData(jsonData);
 		} else {
 			mLogger.warning("No advancements data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
+		}
+
+		/* Scoreboards */
+		/* TODO: Decrease verbosity */
+		mLogger.info("Loading scoreboard data for player=" + player.getName());
+		jsonData = RedisAPI.sync().lindex(getRedisScoresPath(player), 0);
+		mLogger.finer("Data:" + jsonData);
+		if (jsonData != null) {
+			JsonObject obj = mGson.fromJson(jsonData, JsonObject.class);
+			if (obj != null) {
+				ScoreboardUtils.loadFromJsonObject(player, obj);
+			} else {
+				mLogger.severe("Failed to parse player '" + player.getName() + "' scoreboard data as JSON. This results in data loss!");
+			}
+		} else {
+			mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 		}
 	}
 
@@ -59,10 +80,20 @@ public class DataEventListener implements Listener {
 			return;
 		}
 
+		/* Advancements */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving advancements data for player=" + player.getName());
 		mLogger.finer("Data:" + event.getJsonData());
 		RedisAPI.sync().lpush(getRedisAdvancementsPath(player), event.getJsonData());
+
+		/* Scoreboards */
+		/* TODO: Decrease verbosity */
+		mLogger.info("Saving scoreboard data for player=" + player.getName());
+		String data = ScoreboardUtils.getAsJsonObject(player).toString();
+		/* TODO: Decrease verbosity */
+		mLogger.info("Data:" + data);
+		RedisAPI.sync().lpush(getRedisScoresPath(player), data);
+
 		event.setCancelled(true);
 	}
 
@@ -78,17 +109,15 @@ public class DataEventListener implements Listener {
 			mLogger.warning("No data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			return;
 		}
-		/* TODO: Decrease verbosity */
-		mLogger.info("data: " + b64encode(data));
+		mLogger.finer("data: " + b64encode(data));
 
 		/* Load the per-shard data */
 		String shardData = RedisAPI.sync().hget(getRedisPerShardDataPath(player), Conf.getShard());
 		if (shardData == null) {
 			/* This is not an error - this will happen whenever a player first visits a new shard */
-			/* TODO: Decrease Verbosity */
 			mLogger.info("Player '" + player.getName() + "' has never been to this shard before");
 		} else {
-			mLogger.info("sharddata: " + shardData);
+			mLogger.finer("sharddata: " + shardData);
 		}
 
 		try {
@@ -114,9 +143,8 @@ public class DataEventListener implements Listener {
 		try {
 			SaveData data = MonumentaRedisSync.getVersionAdapter().extractSaveData(player, event.getData());
 
-			/* TODO: Decrease verbosity */
-			mLogger.info("data: " + b64encode(data.getData()));
-			mLogger.info("sharddata: " + data.getShardData());
+			mLogger.finer("data: " + b64encode(data.getData()));
+			mLogger.finer("sharddata: " + data.getShardData());
 			RedisAPI.syncStringBytes().lpush(getRedisDataPath(player), data.getData());
 			RedisAPI.sync().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData());
 
@@ -141,6 +169,10 @@ public class DataEventListener implements Listener {
 
 	private String getRedisAdvancementsPath(Player player) {
 		return String.format("%s:playerdata:%s:advancements", Conf.getDomain(), player.getUniqueId().toString());
+	}
+
+	private String getRedisScoresPath(Player player) {
+		return String.format("%s:playerdata:%s:scores", Conf.getDomain(), player.getUniqueId().toString());
 	}
 
 	private static String b64encode(byte[] data) {
