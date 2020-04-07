@@ -28,6 +28,7 @@ import net.minecraft.server.v1_13_R2.PlayerList;
 
 public class VersionAdapter113 implements VersionAdapter {
 	private Gson mGson = new Gson();
+	private Method mSaveMethod = null;
 
 	public Object retrieveSaveData(Player player, byte[] data, String shardData) throws IOException {
 
@@ -83,9 +84,12 @@ public class VersionAdapter113 implements VersionAdapter {
 	public void savePlayer(Player player) throws Exception {
 		PlayerList playerList = ((CraftServer)Bukkit.getServer()).getHandle();
 
-		Method method = PlayerList.class.getDeclaredMethod("savePlayerFile", EntityPlayer.class);
-		method.setAccessible(true);
-		method.invoke(playerList, ((CraftPlayer)player).getHandle());
+		if (mSaveMethod == null) {
+			mSaveMethod = PlayerList.class.getDeclaredMethod("savePlayerFile", EntityPlayer.class);
+			mSaveMethod.setAccessible(true);
+		}
+
+		mSaveMethod.invoke(playerList, ((CraftPlayer)player).getHandle());
 	}
 
 	protected NBTTagList toDoubleList(double... doubles) {
