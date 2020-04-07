@@ -1,5 +1,9 @@
 package com.playmonumenta.redissync;
 
+import java.io.File;
+
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.playmonumenta.redissync.adapters.VersionAdapter;
@@ -29,7 +33,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		INSTANCE = this;
-		new Conf(this.getDataFolder(), false);
+		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
 		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
 		mVersionAdapter = new VersionAdapter113();
@@ -47,5 +51,16 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	public static VersionAdapter getVersionAdapter() {
 		return INSTANCE.mVersionAdapter;
+	}
+
+	private void loadConfig() {
+		File configFile = new File(this.getDataFolder(), "config.yml");
+		/* TODO: Default file if not exist */
+		FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+		String host = config.getString("redis_host", "redis");
+		int port = config.getInt("redis_port", 6379);
+		String domain = config.getString("server_domain", "default_domain");
+		String shard = config.getString("shard_name", "default_shard");
+		new Conf(host, port, domain, shard);
 	}
 }

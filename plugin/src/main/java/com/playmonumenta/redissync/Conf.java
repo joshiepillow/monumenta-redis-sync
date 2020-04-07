@@ -1,10 +1,5 @@
 package com.playmonumenta.redissync;
 
-import java.io.File;
-
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 public class Conf {
 	private static Conf INSTANCE = null;
 
@@ -29,15 +24,11 @@ public class Conf {
 		return INSTANCE.mShard;
 	}
 
-	public Conf(File dataFolder, boolean isBungee) {
-		File configFile = new File(dataFolder, "config.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-
-		mHost = config.getString("redis_host", "redis");
-		mPort = config.getInt("redis_port", 6379);
-		mDomain = config.getString("server_domain", "default_domain");
-		mShard = isBungee ? "bungee" : config.getString("shard_name", "default_shard");
-
+	public Conf(String host, int port, String domain, String shard) {
+		mHost = host;
+		mPort = port;
+		mDomain = domain;
+		mShard = shard;
 		INSTANCE = this;
 	}
 }
