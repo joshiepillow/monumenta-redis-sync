@@ -46,33 +46,35 @@ import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
-import com.playmonumenta.redissync.api.RedisAPI;
 import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
 public class DataEventListener implements Listener {
-	private Gson mGson = new Gson();
 	private static DataEventListener INSTANCE = null;
 
+	private final Gson mGson = new Gson();
 	private final Logger mLogger;
+	private final VersionAdapter mAdapter;
 	private final Set<UUID> mTransferringPlayers = new HashSet<UUID>();
 
-	public DataEventListener(Logger logger) {
+	protected DataEventListener(Logger logger, VersionAdapter adapter) {
 		mLogger = logger;
+		mAdapter = adapter;
 		INSTANCE = this;
 	}
 
-	/********************* Public API *********************/
+	/********************* Protected API *********************/
 
-	public static void setPlayerAsTransferring(Player player) {
+	protected static void setPlayerAsTransferring(Player player) {
 		INSTANCE.mTransferringPlayers.add(player.getUniqueId());
 	}
 
-	public static void setPlayerAsNotTransferring(Player player) {
+	protected static void setPlayerAsNotTransferring(Player player) {
 		INSTANCE.mTransferringPlayers.remove(player.getUniqueId());
 	}
 
-	public static boolean isPlayerTransferring(Player player) {
+	protected static boolean isPlayerTransferring(Player player) {
 		return INSTANCE.mTransferringPlayers.contains(player.getUniqueId());
 	}
 
@@ -85,7 +87,7 @@ public class DataEventListener implements Listener {
 		/* Advancements */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading advancements data for player=" + player.getName());
-		String jsonData = RedisAPI.sync().lindex(getRedisAdvancementsPath(player), 0);
+		String jsonData = RedisAPI.getInstance().sync().lindex(getRedisAdvancementsPath(player), 0);
 		mLogger.finer("Data:" + jsonData);
 		if (jsonData != null) {
 			event.setJsonData(jsonData);
@@ -96,7 +98,7 @@ public class DataEventListener implements Listener {
 		/* Scoreboards */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading scoreboard data for player=" + player.getName());
-		jsonData = RedisAPI.sync().lindex(getRedisScoresPath(player), 0);
+		jsonData = RedisAPI.getInstance().sync().lindex(getRedisScoresPath(player), 0);
 		mLogger.finer("Data:" + jsonData);
 		if (jsonData != null) {
 			JsonObject obj = mGson.fromJson(jsonData, JsonObject.class);
@@ -123,14 +125,14 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving advancements data for player=" + player.getName());
 		mLogger.finer("Data:" + event.getJsonData());
-		RedisAPI.sync().lpush(getRedisAdvancementsPath(player), event.getJsonData());
+		RedisAPI.getInstance().sync().lpush(getRedisAdvancementsPath(player), event.getJsonData());
 
 		/* Scoreboards */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving scoreboard data for player=" + player.getName());
 		String data = ScoreboardUtils.getAsJsonObject(player).toString();
 		mLogger.finer("Data:" + data);
-		RedisAPI.sync().lpush(getRedisScoresPath(player), data);
+		RedisAPI.getInstance().sync().lpush(getRedisScoresPath(player), data);
 
 		event.setCancelled(true);
 	}
@@ -142,7 +144,7 @@ public class DataEventListener implements Listener {
 		mLogger.info("Loading data for player=" + player.getName());
 
 		/* Load the primary shared NBT data */
-		byte[] data = RedisAPI.syncStringBytes().lindex(getRedisDataPath(player), 0);
+		byte[] data = RedisAPI.getInstance().syncStringBytes().lindex(getRedisDataPath(player), 0);
 		if (data == null) {
 			mLogger.warning("No data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			return;
@@ -150,7 +152,7 @@ public class DataEventListener implements Listener {
 		mLogger.finer("data: " + b64encode(data));
 
 		/* Load the per-shard data */
-		String shardData = RedisAPI.sync().hget(getRedisPerShardDataPath(player), Conf.getShard());
+		String shardData = RedisAPI.getInstance().sync().hget(getRedisPerShardDataPath(player), Conf.getShard());
 		if (shardData == null) {
 			/* This is not an error - this will happen whenever a player first visits a new shard */
 			mLogger.info("Player '" + player.getName() + "' has never been to this shard before");
@@ -159,7 +161,7 @@ public class DataEventListener implements Listener {
 		}
 
 		try {
-			Object nbtTagCompound = MonumentaRedisSync.getVersionAdapter().retrieveSaveData(player, data, shardData);
+			Object nbtTagCompound = mAdapter.retrieveSaveData(player, data, shardData);
 			event.setData(nbtTagCompound);
 		} catch (IOException ex) {
 			mLogger.severe("Failed to load player data: " + ex.toString());
@@ -180,12 +182,12 @@ public class DataEventListener implements Listener {
 		mLogger.info("Saving data for player=" + player.getName());
 
 		try {
-			SaveData data = MonumentaRedisSync.getVersionAdapter().extractSaveData(player, event.getData());
+			SaveData data = mAdapter.extractSaveData(player, event.getData());
 
 			mLogger.finer("data: " + b64encode(data.getData()));
 			mLogger.finer("sharddata: " + data.getShardData());
-			RedisAPI.syncStringBytes().lpush(getRedisDataPath(player), data.getData());
-			RedisAPI.sync().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData());
+			RedisAPI.getInstance().syncStringBytes().lpush(getRedisDataPath(player), data.getData());
+			RedisAPI.getInstance().sync().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData());
 
 			event.setCancelled(true);
 		} catch (IOException ex) {

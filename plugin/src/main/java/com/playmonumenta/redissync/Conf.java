@@ -8,23 +8,23 @@ public class Conf {
 	private final String mDomain;
 	private final String mShard;
 
-	public static String getHost() {
+	protected static String getHost() {
 		return INSTANCE.mHost;
 	}
 
-	public static int getPort() {
+	protected static int getPort() {
 		return INSTANCE.mPort;
 	}
 
-	public static String getDomain() {
+	protected static String getDomain() {
 		return INSTANCE.mDomain;
 	}
 
-	public static String getShard() {
+	protected static String getShard() {
 		return INSTANCE.mShard;
 	}
 
-	public Conf(String host, int port, String domain, String shard) {
+	protected Conf(String host, int port, String domain, String shard) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;

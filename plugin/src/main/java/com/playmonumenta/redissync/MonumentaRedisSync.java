@@ -8,7 +8,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.adapters.VersionAdapter113;
-import com.playmonumenta.redissync.api.RedisAPI;
 import com.playmonumenta.redissync.commands.TransferServer;
 
 public class MonumentaRedisSync extends JavaPlugin {
@@ -16,12 +15,10 @@ public class MonumentaRedisSync extends JavaPlugin {
 	private RedisAPI mRedisAPI = null;
 	private VersionAdapter mVersionAdapter = null;
 
-	public static MonumentaRedisSync getInstance() {
-		return INSTANCE;
-	}
-
 	@Override
 	public void onLoad() {
+		mVersionAdapter = new VersionAdapter113();
+
 		/*
 		 * CommandAPI commands which register directly and are usable in functions
 		 *
@@ -38,8 +35,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		INSTANCE = this;
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
-		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger()), this);
-		mVersionAdapter = new VersionAdapter113();
+		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
 
 		this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 	}
@@ -52,8 +48,12 @@ public class MonumentaRedisSync extends JavaPlugin {
 		getServer().getScheduler().cancelTasks(this);
 	}
 
-	public static VersionAdapter getVersionAdapter() {
-		return INSTANCE.mVersionAdapter;
+	protected static MonumentaRedisSync getInstance() {
+		return INSTANCE;
+	}
+
+	protected VersionAdapter getVersionAdapter() {
+		return mVersionAdapter;
 	}
 
 	private void loadConfig() {

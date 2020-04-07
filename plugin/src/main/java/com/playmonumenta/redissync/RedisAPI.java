@@ -1,4 +1,4 @@
-package com.playmonumenta.redissync.api;
+package com.playmonumenta.redissync;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -11,8 +11,8 @@ import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.codec.RedisCodec;
 
 public class RedisAPI {
-	public static final class StringByteCodec implements RedisCodec<String, byte[]> {
-		public static final StringByteCodec INSTANCE = new StringByteCodec();
+	private static final class StringByteCodec implements RedisCodec<String, byte[]> {
+		private static final StringByteCodec INSTANCE = new StringByteCodec();
 		private static final byte[] EMPTY = new byte[0];
 		private final Charset charset = Charset.forName("UTF-8");
 
@@ -45,45 +45,49 @@ public class RedisAPI {
 			buffer.get(b);
 			return b;
 		}
-
 	}
-	private static RedisClient mRedisClient = null;
-	private static StatefulRedisConnection<String, String> mConnection = null;
-	private static StatefulRedisConnection<String, byte[]> mStringByteConnection = null;
 
-	public RedisAPI(String hostname, int port) {
+	private static RedisAPI INSTANCE = null;
+
+	private RedisClient mRedisClient = null;
+	private StatefulRedisConnection<String, String> mConnection = null;
+	private StatefulRedisConnection<String, byte[]> mStringByteConnection = null;
+
+	protected RedisAPI(String hostname, int port) {
 		mRedisClient = RedisClient.create(RedisURI.Builder.redis(hostname, port).build());
 		mConnection = mRedisClient.connect();
 		mStringByteConnection = mRedisClient.connect(StringByteCodec.INSTANCE);
+		INSTANCE = this;
 	}
 
-	/*
-	 * Do not call this outside Plugin.java onDisable()
-	 */
-	public void shutdown() {
+	protected void shutdown() {
 		mConnection.close();
 		mConnection = null;
 		mRedisClient.shutdown();
 		mRedisClient = null;
 	}
 
-	public static RedisCommands<String, String> sync() {
+	public static RedisAPI getInstance() {
+		return INSTANCE;
+	}
+
+	public RedisCommands<String, String> sync() {
 		return mConnection.sync();
 	}
 
-	public static RedisAsyncCommands<String, String> async() {
+	public RedisAsyncCommands<String, String> async() {
 		return mConnection.async();
 	}
 
-	public static RedisCommands<String, byte[]> syncStringBytes() {
+	public RedisCommands<String, byte[]> syncStringBytes() {
 		return mStringByteConnection.sync();
 	}
 
-	public static RedisAsyncCommands<String, byte[]> asyncStringBytes() {
+	public RedisAsyncCommands<String, byte[]> asyncStringBytes() {
 		return mStringByteConnection.async();
 	}
 
-	public static boolean isReady() {
+	public boolean isReady() {
 		return mConnection.isOpen();
 	}
 }
