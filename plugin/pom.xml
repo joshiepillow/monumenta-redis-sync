@@ -170,15 +170,11 @@
                     <relocations>
                         <relocation>
                             <pattern>io.lettuce</pattern>
-                            <shadedPattern>com.playmonumenta.redissync.internal.lettuce</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>io.netty</pattern>
-                            <shadedPattern>com.playmonumenta.redissync.internal.netty</shadedPattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.io.lettuce</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>org.reactivestreams</pattern>
-                            <shadedPattern>com.playmonumenta.redissync.internal.reactivestreams</shadedPattern>
+                            <shadedPattern>com.playmonumenta.redissync.internal.org.reactivestreams</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>reactor.adapter</pattern>

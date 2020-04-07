@@ -32,6 +32,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+		/* Needed to tell Netty where it moved to */
+		System.setProperty("com.playmonumenta.redissync.internal.io.netty", "com.playmonumenta.redissync.internal");
+
 		INSTANCE = this;
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());

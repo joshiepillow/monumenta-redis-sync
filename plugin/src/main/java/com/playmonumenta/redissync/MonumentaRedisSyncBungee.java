@@ -3,8 +3,6 @@ package com.playmonumenta.redissync;
 import java.io.File;
 import java.io.IOException;
 
-import com.playmonumenta.redissync.adapters.VersionAdapter;
-import com.playmonumenta.redissync.adapters.VersionAdapter113;
 import com.playmonumenta.redissync.api.RedisAPI;
 
 import net.md_5.bungee.api.plugin.Plugin;
@@ -15,7 +13,6 @@ import net.md_5.bungee.config.YamlConfiguration;
 public class MonumentaRedisSyncBungee extends Plugin {
 	private static MonumentaRedisSyncBungee INSTANCE = null;
 	private RedisAPI mRedisAPI = null;
-	private VersionAdapter mVersionAdapter = null;
 
 	public static MonumentaRedisSyncBungee getInstance() {
 		return INSTANCE;
@@ -23,10 +20,12 @@ public class MonumentaRedisSyncBungee extends Plugin {
 
 	@Override
 	public void onEnable() {
+		/* Needed to tell Netty where it moved to */
+		System.setProperty("com.playmonumenta.redissync.internal.netty", "com.playmonumenta.redissync.internal");
+
 		INSTANCE = this;
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
-		mVersionAdapter = new VersionAdapter113();
 	}
 
 	@Override
@@ -34,10 +33,6 @@ public class MonumentaRedisSyncBungee extends Plugin {
 		INSTANCE = null;
 		mRedisAPI.shutdown();
 		mRedisAPI = null;
-	}
-
-	public static VersionAdapter getVersionAdapter() {
-		return INSTANCE.mVersionAdapter;
 	}
 
 	private void loadConfig() {
