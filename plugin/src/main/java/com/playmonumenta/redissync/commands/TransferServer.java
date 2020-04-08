@@ -31,7 +31,7 @@ public class TransferServer {
 		                                  (sender, args) -> {
 											  for (Player player : (Collection<Player>)args[0]) {
 												  try {
-													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[0]);
+													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1]);
 												  } catch (Exception ex) {
 													  CommandAPI.fail(ex.getMessage());
 												  }

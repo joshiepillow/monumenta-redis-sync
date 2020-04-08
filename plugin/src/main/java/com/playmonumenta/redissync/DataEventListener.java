@@ -1,10 +1,14 @@
 package com.playmonumenta.redissync;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.bukkit.entity.Entity;
@@ -50,6 +54,9 @@ import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
+import io.lettuce.core.LettuceFutures;
+import io.lettuce.core.RedisFuture;
+
 public class DataEventListener implements Listener {
 	private static DataEventListener INSTANCE = null;
 
@@ -84,31 +91,39 @@ public class DataEventListener implements Listener {
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
 		Player player = event.getPlayer();
 
-		/* Advancements */
-		/* TODO: Decrease verbosity */
-		mLogger.info("Loading advancements data for player=" + player.getName());
-		String jsonData = RedisAPI.getInstance().sync().lindex(getRedisAdvancementsPath(player), 0);
-		mLogger.finer("Data:" + jsonData);
-		if (jsonData != null) {
-			event.setJsonData(jsonData);
-		} else {
-			mLogger.warning("No advancements data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
-		}
+		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(getRedisAdvancementsPath(player), 0);
+		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(getRedisScoresPath(player), 0);
 
-		/* Scoreboards */
-		/* TODO: Decrease verbosity */
-		mLogger.info("Loading scoreboard data for player=" + player.getName());
-		jsonData = RedisAPI.getInstance().sync().lindex(getRedisScoresPath(player), 0);
-		mLogger.finer("Data:" + jsonData);
-		if (jsonData != null) {
-			JsonObject obj = mGson.fromJson(jsonData, JsonObject.class);
-			if (obj != null) {
-				ScoreboardUtils.loadFromJsonObject(player, obj);
+		try {
+			/* Advancements */
+			/* TODO: Decrease verbosity */
+			mLogger.info("Loading advancements data for player=" + player.getName());
+			String jsonData = advanceFuture.get();
+			mLogger.finer("Data:" + jsonData);
+			if (jsonData != null) {
+				event.setJsonData(jsonData);
 			} else {
-				mLogger.severe("Failed to parse player '" + player.getName() + "' scoreboard data as JSON. This results in data loss!");
+				mLogger.warning("No advancements data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			}
-		} else {
-			mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
+
+			/* Scoreboards */
+			/* TODO: Decrease verbosity */
+			mLogger.info("Loading scoreboard data for player=" + player.getName());
+			jsonData = scoreFuture.get();
+			mLogger.finer("Data:" + jsonData);
+			if (jsonData != null) {
+				JsonObject obj = mGson.fromJson(jsonData, JsonObject.class);
+				if (obj != null) {
+					ScoreboardUtils.loadFromJsonObject(player, obj);
+				} else {
+					mLogger.severe("Failed to parse player '" + player.getName() + "' scoreboard data as JSON. This results in data loss!");
+				}
+			} else {
+				mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
+			}
+		} catch (InterruptedException | ExecutionException ex) {
+			mLogger.severe("Failed to get advancements/scores data for player '" + player.getName() + "'. This is very bad!");
+			ex.printStackTrace();
 		}
 	}
 
@@ -121,18 +136,29 @@ public class DataEventListener implements Listener {
 			return;
 		}
 
+		List<RedisFuture<?>> futures = new ArrayList<>(4);
+
 		/* Advancements */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving advancements data for player=" + player.getName());
 		mLogger.finer("Data:" + event.getJsonData());
-		RedisAPI.getInstance().sync().lpush(getRedisAdvancementsPath(player), event.getJsonData());
+		String advPath = getRedisAdvancementsPath(player);
+		futures.add(RedisAPI.getInstance().async().lpush(advPath, event.getJsonData()));
+		futures.add(RedisAPI.getInstance().async().ltrim(advPath, 0, 20)); // TODO Config
 
 		/* Scoreboards */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving scoreboard data for player=" + player.getName());
 		String data = ScoreboardUtils.getAsJsonObject(player).toString();
 		mLogger.finer("Data:" + data);
-		RedisAPI.getInstance().sync().lpush(getRedisScoresPath(player), data);
+		String scorePath = getRedisScoresPath(player);
+		futures.add(RedisAPI.getInstance().async().lpush(scorePath, data));
+		futures.add(RedisAPI.getInstance().async().ltrim(scorePath, 0, 20)); // TODO Config
+
+		/* TODO This could be made async somehow? Usually don't need to wait for save...  */
+		if (!LettuceFutures.awaitAll(10, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+			mLogger.severe("Got timeout trying to save advancements/scores data for player '" + player.getName() + "'. This is very bad!");
+		}
 
 		event.setCancelled(true);
 	}
@@ -181,18 +207,30 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving data for player=" + player.getName());
 
+		List<RedisFuture<?>> futures = new ArrayList<>(5);
+
 		try {
 			SaveData data = mAdapter.extractSaveData(player, event.getData());
 
 			mLogger.finer("data: " + b64encode(data.getData()));
 			mLogger.finer("sharddata: " + data.getShardData());
-			RedisAPI.getInstance().syncStringBytes().lpush(getRedisDataPath(player), data.getData());
-			RedisAPI.getInstance().sync().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData());
+			String dataPath = getRedisDataPath(player);
+			futures.add(RedisAPI.getInstance().asyncStringBytes().lpush(dataPath, data.getData()));
+			futures.add(RedisAPI.getInstance().asyncStringBytes().ltrim(dataPath, 0, 20)); // TODO Config
+			futures.add(RedisAPI.getInstance().async().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData()));
+			String histPath = getRedisHistoryPath(player);
+			futures.add(RedisAPI.getInstance().async().lpush(histPath, Conf.getShard() + "|" + Long.toString(System.currentTimeMillis())));
+			futures.add(RedisAPI.getInstance().async().ltrim(histPath, 0, 20)); // TODO Config
 
 			event.setCancelled(true);
 		} catch (IOException ex) {
 			mLogger.severe("Failed to save player data: " + ex.toString());
 			ex.printStackTrace();
+		}
+
+		/* TODO This could be made async somehow? Usually don't need to wait for save...  */
+		if (!LettuceFutures.awaitAll(10, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+			mLogger.severe("Got timeout trying to save advancements/scores data for player '" + player.getName() + "'. This is very bad!");
 		}
 	}
 
@@ -338,6 +376,10 @@ public class DataEventListener implements Listener {
 
 	private String getRedisDataPath(Player player) {
 		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
+	}
+
+	private String getRedisHistoryPath(Player player) {
+		return String.format("%s:playerdata:%s:history", Conf.getDomain(), player.getUniqueId().toString());
 	}
 
 	private String getRedisPerShardDataPath(Player player) {
