@@ -3,6 +3,7 @@ package com.playmonumenta.redissync;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,7 +43,9 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
@@ -58,12 +61,15 @@ import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 
 public class DataEventListener implements Listener {
+	private static final int TIMEOUT_SECONDS = 10;
 	private static DataEventListener INSTANCE = null;
 
 	private final Gson mGson = new Gson();
 	private final Logger mLogger;
 	private final VersionAdapter mAdapter;
 	private final Set<UUID> mTransferringPlayers = new HashSet<UUID>();
+
+	private final HashMap<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
 
 	protected DataEventListener(Logger logger, VersionAdapter adapter) {
 		mLogger = logger;
@@ -83,6 +89,41 @@ public class DataEventListener implements Listener {
 
 	protected static boolean isPlayerTransferring(Player player) {
 		return INSTANCE.mTransferringPlayers.contains(player.getUniqueId());
+	}
+
+	protected static void waitForPlayerToSave(Player player, Runnable callback) {
+		INSTANCE.waitForPlayerToSaveInternal(player, callback);
+	}
+
+	private void waitForPlayerToSaveInternal(Player player, Runnable callback) {
+		Plugin plugin = MonumentaRedisSync.getInstance();
+
+		List<RedisFuture<?>> futures = mPendingSaves.remove(player.getUniqueId());
+
+		if (futures == null || futures.isEmpty()) {
+			mLogger.warning("Got request to wait for save commit but no pending save operations found. This might be a bug with the plugin that uses MonumentaRedisSync");
+			callback.run();
+			return;
+		}
+
+		long startTime = System.currentTimeMillis();
+
+		new BukkitRunnable() {
+			public void run() {
+				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+					mLogger.severe("Got timeout waiting to commit transactions for player '" + player.getName() + "'. This is very bad!");
+				}
+
+				/* Run the callback on the main thread */
+				new BukkitRunnable() {
+					public void run() {
+						/* TODO: Verbosity */
+						mLogger.info("Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
+						callback.run();
+					}
+				}.runTask(plugin);
+			}
+		}.runTaskAsynchronously(plugin);
 	}
 
 	/********************* Data Save/Load Event Handlers *********************/
@@ -129,14 +170,21 @@ public class DataEventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataSaveEvent(PlayerAdvancementDataSaveEvent event) {
+		/* Always cancel saving the player file to disk with this plugin present */
+		event.setCancelled(true);
+
 		Player player = event.getPlayer();
 		if (isPlayerTransferring(player)) {
 			mLogger.fine("Ignoring PlayerAdvancementDataSaveEvent for player:" + player.getName());
-			event.setCancelled(true);
 			return;
 		}
 
-		List<RedisFuture<?>> futures = new ArrayList<>(4);
+		List<RedisFuture<?>> futures = mPendingSaves.remove(player.getUniqueId());
+		if (futures == null) {
+			futures = new ArrayList<>();
+		} else {
+			futures.removeIf(future -> future.isDone());
+		}
 
 		/* Advancements */
 		/* TODO: Decrease verbosity */
@@ -155,12 +203,8 @@ public class DataEventListener implements Listener {
 		futures.add(RedisAPI.getInstance().async().lpush(scorePath, data));
 		futures.add(RedisAPI.getInstance().async().ltrim(scorePath, 0, 20)); // TODO Config
 
-		/* TODO This could be made async somehow? Usually don't need to wait for save...  */
-		if (!LettuceFutures.awaitAll(10, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-			mLogger.severe("Got timeout trying to save advancements/scores data for player '" + player.getName() + "'. This is very bad!");
-		}
-
-		event.setCancelled(true);
+		/* Don't block - store the pending futures for completion later */
+		mPendingSaves.put(player.getUniqueId(), futures);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -197,17 +241,23 @@ public class DataEventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerDataSaveEvent(PlayerDataSaveEvent event) {
+		event.setCancelled(true);
+
 		Player player = event.getPlayer();
 		if (isPlayerTransferring(player)) {
 			mLogger.fine("Ignoring PlayerDataSaveEvent for player:" + player.getName());
-			event.setCancelled(true);
 			return;
 		}
 
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving data for player=" + player.getName());
 
-		List<RedisFuture<?>> futures = new ArrayList<>(5);
+		List<RedisFuture<?>> futures = mPendingSaves.remove(player.getUniqueId());
+		if (futures == null) {
+			futures = new ArrayList<>();
+		} else {
+			futures.removeIf(future -> future.isDone());
+		}
 
 		try {
 			SaveData data = mAdapter.extractSaveData(player, event.getData());
@@ -221,17 +271,13 @@ public class DataEventListener implements Listener {
 			String histPath = getRedisHistoryPath(player);
 			futures.add(RedisAPI.getInstance().async().lpush(histPath, Conf.getShard() + "|" + Long.toString(System.currentTimeMillis())));
 			futures.add(RedisAPI.getInstance().async().ltrim(histPath, 0, 20)); // TODO Config
-
-			event.setCancelled(true);
 		} catch (IOException ex) {
 			mLogger.severe("Failed to save player data: " + ex.toString());
 			ex.printStackTrace();
 		}
 
-		/* TODO This could be made async somehow? Usually don't need to wait for save...  */
-		if (!LettuceFutures.awaitAll(10, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-			mLogger.severe("Got timeout trying to save advancements/scores data for player '" + player.getName() + "'. This is very bad!");
-		}
+		/* Don't block - store the pending futures for completion later */
+		mPendingSaves.put(player.getUniqueId(), futures);
 	}
 
 	/********************* Transferring Restriction Event Handlers *********************/
