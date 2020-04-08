@@ -29,6 +29,7 @@ public class Conf {
 		mPort = port;
 		mDomain = domain;
 		mShard = shard;
+		// TODO: History to keep
 		INSTANCE = this;
 	}
 }

@@ -1,5 +1,11 @@
 package com.playmonumenta.redissync;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -10,8 +16,28 @@ import com.google.common.io.ByteStreams;
 import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
 
 import io.github.jorelali.commandapi.api.CommandAPI;
+import io.lettuce.core.RedisFuture;
 
 public class MonumentaRedisSyncAPI {
+
+	public static CompletableFuture<String> uuidToName(UUID uuid) {
+		return RedisAPI.getInstance().async().hget(BungeeListener.uuidToNamePath, uuid.toString()).toCompletableFuture();
+	}
+
+	public static CompletableFuture<UUID> nameToUUID(String name) {
+		return RedisAPI.getInstance().async().hget(BungeeListener.nameToUUIDPath, name).thenApply((uuid) -> UUID.fromString(uuid)).toCompletableFuture();
+	}
+
+	public static CompletableFuture<Set<String>> getAllPlayerNames() {
+		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall(BungeeListener.nameToUUIDPath);
+		return future.thenApply((data) -> data.keySet()).toCompletableFuture();
+	}
+
+	public static CompletableFuture<Set<UUID>> getAllPlayerUUIDs() {
+		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall(BungeeListener.nameToUUIDPath);
+		return future.thenApply((data) -> data.keySet().stream().map((uuid) -> UUID.fromString(uuid)).collect(Collectors.toSet())).toCompletableFuture();
+	}
+
 	public static void sendPlayer(Plugin plugin, Player player, String target) throws Exception {
 		if (MonumentaRedisSync.getInstance() == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");

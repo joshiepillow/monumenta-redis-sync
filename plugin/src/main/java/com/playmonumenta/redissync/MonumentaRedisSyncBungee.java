@@ -18,6 +18,7 @@ public class MonumentaRedisSyncBungee extends Plugin {
 
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
+		getProxy().getPluginManager().registerListener(this, new BungeeListener());
 	}
 
 	@Override
