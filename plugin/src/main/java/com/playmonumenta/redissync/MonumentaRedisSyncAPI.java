@@ -91,7 +91,7 @@ public class MonumentaRedisSyncAPI {
 		});
 
 		/* TODO: Verbosity */
-		mrs.getLogger().info("Transferring players took took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
+		mrs.getLogger().info("Transferring players took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 	}
 }
 

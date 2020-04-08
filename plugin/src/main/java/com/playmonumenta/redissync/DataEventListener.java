@@ -197,7 +197,10 @@ public class DataEventListener implements Listener {
 		/* Scoreboards */
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving scoreboard data for player=" + player.getName());
+		long startTime = System.currentTimeMillis();
 		String data = ScoreboardUtils.getAsJsonObject(player).toString();
+		/* TODO: Decrease verbosity */
+		mLogger.info("Scoreboard saving took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 		mLogger.finer("Data:" + data);
 		String scorePath = getRedisScoresPath(player);
 		futures.add(RedisAPI.getInstance().async().lpush(scorePath, data));
