@@ -61,7 +61,6 @@ import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 
 public class DataEventListener implements Listener {
-	private static final int TIMEOUT_SECONDS = 10;
 	private static DataEventListener INSTANCE = null;
 
 	private final Gson mGson = new Gson();
@@ -91,11 +90,15 @@ public class DataEventListener implements Listener {
 		return INSTANCE.mTransferringPlayers.contains(player.getUniqueId());
 	}
 
-	protected static void waitForPlayerToSave(Player player, Runnable callback) {
-		INSTANCE.waitForPlayerToSaveInternal(player, callback);
+	protected static void waitForPlayerToSaveThenSync(Player player, Runnable callback) {
+		INSTANCE.waitForPlayerToSaveInternal(player, callback, true);
 	}
 
-	private void waitForPlayerToSaveInternal(Player player, Runnable callback) {
+	protected static void waitForPlayerToSaveThenAsync(Player player, Runnable callback) {
+		INSTANCE.waitForPlayerToSaveInternal(player, callback, false);
+	}
+
+	private void waitForPlayerToSaveInternal(Player player, Runnable callback, boolean sync) {
 		Plugin plugin = MonumentaRedisSync.getInstance();
 
 		List<RedisFuture<?>> futures = mPendingSaves.remove(player.getUniqueId());
@@ -110,18 +113,23 @@ public class DataEventListener implements Listener {
 
 		new BukkitRunnable() {
 			public void run() {
-				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+				if (!LettuceFutures.awaitAll(MonumentaRedisSyncAPI.TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 					mLogger.severe("Got timeout waiting to commit transactions for player '" + player.getName() + "'. This is very bad!");
 				}
+				/* TODO: Verbosity */
+				mLogger.info("Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
 
-				/* Run the callback on the main thread */
-				new BukkitRunnable() {
-					public void run() {
-						/* TODO: Verbosity */
-						mLogger.info("Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
-						callback.run();
-					}
-				}.runTask(plugin);
+				if (sync) {
+					/* Run the sync callback on the main thread */
+					new BukkitRunnable() {
+						public void run() {
+							callback.run();
+						}
+					}.runTask(plugin);
+				} else {
+					/* Run the async callback directly */
+					callback.run();
+				}
 			}
 		}.runTaskAsynchronously(plugin);
 	}
@@ -132,8 +140,8 @@ public class DataEventListener implements Listener {
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
 		Player player = event.getPlayer();
 
-		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(getRedisAdvancementsPath(player), 0);
-		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(getRedisScoresPath(player), 0);
+		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisAdvancementsPath(player), 0);
+		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
 
 		try {
 			/* Advancements */
@@ -190,7 +198,7 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving advancements data for player=" + player.getName());
 		mLogger.finer("Data:" + event.getJsonData());
-		String advPath = getRedisAdvancementsPath(player);
+		String advPath = MonumentaRedisSyncAPI.getRedisAdvancementsPath(player);
 		futures.add(RedisAPI.getInstance().async().lpush(advPath, event.getJsonData()));
 		futures.add(RedisAPI.getInstance().async().ltrim(advPath, 0, 20)); // TODO Config
 
@@ -202,7 +210,7 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Scoreboard saving took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 		mLogger.finer("Data:" + data);
-		String scorePath = getRedisScoresPath(player);
+		String scorePath = MonumentaRedisSyncAPI.getRedisScoresPath(player);
 		futures.add(RedisAPI.getInstance().async().lpush(scorePath, data));
 		futures.add(RedisAPI.getInstance().async().ltrim(scorePath, 0, 20)); // TODO Config
 
@@ -217,7 +225,7 @@ public class DataEventListener implements Listener {
 		mLogger.info("Loading data for player=" + player.getName());
 
 		/* Load the primary shared NBT data */
-		byte[] data = RedisAPI.getInstance().syncStringBytes().lindex(getRedisDataPath(player), 0);
+		byte[] data = RedisAPI.getInstance().syncStringBytes().lindex(MonumentaRedisSyncAPI.getRedisDataPath(player), 0);
 		if (data == null) {
 			mLogger.warning("No data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			return;
@@ -225,7 +233,7 @@ public class DataEventListener implements Listener {
 		mLogger.finer("data: " + b64encode(data));
 
 		/* Load the per-shard data */
-		String shardData = RedisAPI.getInstance().sync().hget(getRedisPerShardDataPath(player), Conf.getShard());
+		String shardData = RedisAPI.getInstance().sync().hget(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShard());
 		if (shardData == null) {
 			/* This is not an error - this will happen whenever a player first visits a new shard */
 			mLogger.info("Player '" + player.getName() + "' has never been to this shard before");
@@ -267,12 +275,12 @@ public class DataEventListener implements Listener {
 
 			mLogger.finer("data: " + b64encode(data.getData()));
 			mLogger.finer("sharddata: " + data.getShardData());
-			String dataPath = getRedisDataPath(player);
+			String dataPath = MonumentaRedisSyncAPI.getRedisDataPath(player);
 			futures.add(RedisAPI.getInstance().asyncStringBytes().lpush(dataPath, data.getData()));
 			futures.add(RedisAPI.getInstance().asyncStringBytes().ltrim(dataPath, 0, 20)); // TODO Config
-			futures.add(RedisAPI.getInstance().async().hset(getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData()));
-			String histPath = getRedisHistoryPath(player);
-			futures.add(RedisAPI.getInstance().async().lpush(histPath, Conf.getShard() + "|" + Long.toString(System.currentTimeMillis())));
+			futures.add(RedisAPI.getInstance().async().hset(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData()));
+			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);
+			futures.add(RedisAPI.getInstance().async().lpush(histPath, Conf.getShard() + "|" + Long.toString(System.currentTimeMillis()) + "|" + player.getName()));
 			futures.add(RedisAPI.getInstance().async().ltrim(histPath, 0, 20)); // TODO Config
 		} catch (IOException ex) {
 			mLogger.severe("Failed to save player data: " + ex.toString());
@@ -421,26 +429,6 @@ public class DataEventListener implements Listener {
 		if (entity != null && entity instanceof Player && isPlayerTransferring((Player)entity)) {
 			event.setCancelled(true);
 		}
-	}
-
-	private String getRedisDataPath(Player player) {
-		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
-	}
-
-	private String getRedisHistoryPath(Player player) {
-		return String.format("%s:playerdata:%s:history", Conf.getDomain(), player.getUniqueId().toString());
-	}
-
-	private String getRedisPerShardDataPath(Player player) {
-		return String.format("%s:playerdata:%s:sharddata", Conf.getDomain(), player.getUniqueId().toString());
-	}
-
-	private String getRedisAdvancementsPath(Player player) {
-		return String.format("%s:playerdata:%s:advancements", Conf.getDomain(), player.getUniqueId().toString());
-	}
-
-	private String getRedisScoresPath(Player player) {
-		return String.format("%s:playerdata:%s:scores", Conf.getDomain(), player.getUniqueId().toString());
 	}
 
 	private static String b64encode(byte[] data) {
