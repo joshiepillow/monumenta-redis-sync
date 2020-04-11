@@ -200,7 +200,7 @@ public class DataEventListener implements Listener {
 		mLogger.finer("Data:" + event.getJsonData());
 		String advPath = MonumentaRedisSyncAPI.getRedisAdvancementsPath(player);
 		futures.add(RedisAPI.getInstance().async().lpush(advPath, event.getJsonData()));
-		futures.add(RedisAPI.getInstance().async().ltrim(advPath, 0, 20)); // TODO Config
+		futures.add(RedisAPI.getInstance().async().ltrim(advPath, 0, Conf.getHistory()));
 
 		/* Scoreboards */
 		/* TODO: Decrease verbosity */
@@ -212,7 +212,7 @@ public class DataEventListener implements Listener {
 		mLogger.finer("Data:" + data);
 		String scorePath = MonumentaRedisSyncAPI.getRedisScoresPath(player);
 		futures.add(RedisAPI.getInstance().async().lpush(scorePath, data));
-		futures.add(RedisAPI.getInstance().async().ltrim(scorePath, 0, 20)); // TODO Config
+		futures.add(RedisAPI.getInstance().async().ltrim(scorePath, 0, Conf.getHistory()));
 
 		/* Don't block - store the pending futures for completion later */
 		mPendingSaves.put(player.getUniqueId(), futures);
@@ -277,11 +277,11 @@ public class DataEventListener implements Listener {
 			mLogger.finer("sharddata: " + data.getShardData());
 			String dataPath = MonumentaRedisSyncAPI.getRedisDataPath(player);
 			futures.add(RedisAPI.getInstance().asyncStringBytes().lpush(dataPath, data.getData()));
-			futures.add(RedisAPI.getInstance().asyncStringBytes().ltrim(dataPath, 0, 20)); // TODO Config
+			futures.add(RedisAPI.getInstance().asyncStringBytes().ltrim(dataPath, 0, Conf.getHistory()));
 			futures.add(RedisAPI.getInstance().async().hset(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShard(), data.getShardData()));
 			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);
 			futures.add(RedisAPI.getInstance().async().lpush(histPath, Conf.getShard() + "|" + Long.toString(System.currentTimeMillis()) + "|" + player.getName()));
-			futures.add(RedisAPI.getInstance().async().ltrim(histPath, 0, 20)); // TODO Config
+			futures.add(RedisAPI.getInstance().async().ltrim(histPath, 0, Conf.getHistory()));
 		} catch (IOException ex) {
 			mLogger.severe("Failed to save player data: " + ex.toString());
 			ex.printStackTrace();

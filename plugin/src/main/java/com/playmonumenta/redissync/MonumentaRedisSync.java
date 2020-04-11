@@ -66,6 +66,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		int port = config.getInt("redis_port", 6379);
 		String domain = config.getString("server_domain", "default_domain");
 		String shard = config.getString("shard_name", "default_shard");
-		new Conf(host, port, domain, shard);
+		int history = config.getInt("history_amount", 20);
+		new Conf(host, port, domain, shard, history);
 	}
 }

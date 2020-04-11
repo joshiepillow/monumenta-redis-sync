@@ -32,8 +32,6 @@ public class MonumentaRedisSyncBungee extends Plugin {
 		/* TODO: Default file if not exist */
 		String host = "redis";
 		int port = 6379;
-		String domain = null;
-		String shard = "bungee";
 		try {
 			Configuration config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(configFile);
 			host = config.getString("redis_host", host);
@@ -42,6 +40,6 @@ public class MonumentaRedisSyncBungee extends Plugin {
 			this.getLogger().warning("Failed to load config file " + configFile.getPath() + " : " + ex.getMessage());
 			return;
 		}
-		new Conf(host, port, domain, shard);
+		new Conf(host, port, "bungee");
 	}
 }

@@ -7,6 +7,7 @@ public class Conf {
 	private final int mPort;
 	private final String mDomain;
 	private final String mShard;
+	private final int mHistory;
 
 	protected static String getHost() {
 		return INSTANCE.mHost;
@@ -24,12 +25,25 @@ public class Conf {
 		return INSTANCE.mShard;
 	}
 
-	protected Conf(String host, int port, String domain, String shard) {
+	protected static int getHistory() {
+		return INSTANCE.mHistory;
+	}
+
+	protected Conf(String host, int port, String shard) {
+		mHost = host;
+		mPort = port;
+		mDomain = null;
+		mShard = shard;
+		mHistory = -1;
+		INSTANCE = this;
+	}
+
+	protected Conf(String host, int port, String domain, String shard, int history) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;
 		mShard = shard;
-		// TODO: History to keep
+		mHistory = history;
 		INSTANCE = this;
 	}
 }
