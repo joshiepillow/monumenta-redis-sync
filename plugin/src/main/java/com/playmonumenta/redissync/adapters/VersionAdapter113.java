@@ -5,8 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
-import org.apache.commons.codec.binary.Base64InputStream;
-import org.apache.commons.codec.binary.Base64OutputStream;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_13_R2.CraftServer;
@@ -33,7 +31,7 @@ public class VersionAdapter113 implements VersionAdapter {
 	public Object retrieveSaveData(Player player, byte[] data, String shardData) throws IOException {
 
 		ByteArrayInputStream inBytes = new ByteArrayInputStream(data);
-		NBTTagCompound nbt = NBTCompressedStreamTools.a(new Base64InputStream(inBytes));
+		NBTTagCompound nbt = NBTCompressedStreamTools.a(inBytes);
 
 		if (shardData == null) {
 			/* If player has never been to this shard, put them at world spawn */
@@ -77,7 +75,7 @@ public class VersionAdapter113 implements VersionAdapter {
 		copyFloatList(obj, nbt, "Rotation");
 
 		ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
-		NBTCompressedStreamTools.a(nbt, new Base64OutputStream(outBytes));
+		NBTCompressedStreamTools.a(nbt, outBytes);
 		return new SaveData(outBytes.toByteArray(), obj.toString());
 	}
 
