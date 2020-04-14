@@ -218,7 +218,8 @@ public class MonumentaRedisSyncAPI {
 				player.sendMessage(ChatColor.RED + "Failed to load stash data: " + ex.getMessage());
 			}
 
-			player.kickPlayer("Stash data loaded successfully");
+			/* Kick the player on the main thread to force rejoin */
+			Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kickPlayer("Stash data loaded successfully"));
 		});
 	}
 
