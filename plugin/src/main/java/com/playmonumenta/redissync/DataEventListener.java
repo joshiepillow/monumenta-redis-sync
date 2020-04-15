@@ -101,21 +101,16 @@ public class DataEventListener implements Listener {
 	private void waitForPlayerToSaveInternal(Player player, Runnable callback, boolean sync) {
 		Plugin plugin = MonumentaRedisSync.getInstance();
 
-		List<RedisFuture<?>> futures = mPendingSaves.remove(player.getUniqueId());
-
-		if (futures == null || futures.isEmpty()) {
+		if (!mPendingSaves.containsKey(player.getUniqueId())) {
 			mLogger.warning("Got request to wait for save commit but no pending save operations found. This might be a bug with the plugin that uses MonumentaRedisSync");
-			callback.run();
-			return;
 		}
 
 		long startTime = System.currentTimeMillis();
 
 		new BukkitRunnable() {
 			public void run() {
-				if (!LettuceFutures.awaitAll(MonumentaRedisSyncAPI.TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-					mLogger.severe("Got timeout waiting to commit transactions for player '" + player.getName() + "'. This is very bad!");
-				}
+				blockingWaitForPlayerToSave(player);
+
 				/* TODO: Verbosity */
 				mLogger.info("Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
 
@@ -134,19 +129,35 @@ public class DataEventListener implements Listener {
 		}.runTaskAsynchronously(plugin);
 	}
 
+	private void blockingWaitForPlayerToSave(Player player) {
+		List<RedisFuture<?>> futures = mPendingSaves.remove(player.getUniqueId());
+
+		if (futures == null || futures.isEmpty()) {
+			return;
+		}
+
+		if (!LettuceFutures.awaitAll(MonumentaRedisSyncAPI.TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+			mLogger.severe("Got timeout waiting to commit transactions for player '" + player.getName() + "'. This is very bad!");
+		}
+	}
+
 	/********************* Data Save/Load Event Handlers *********************/
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
 		Player player = event.getPlayer();
 
+		/* TODO: Decrease verbosity */
+		mLogger.info("Loading advancements data for player=" + player.getName());
+
+		/* Wait until player has finished saving if they just logged out and back in */
+		blockingWaitForPlayerToSave(player);
+
 		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisAdvancementsPath(player), 0);
 		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
 
 		try {
 			/* Advancements */
-			/* TODO: Decrease verbosity */
-			mLogger.info("Loading advancements data for player=" + player.getName());
 			String jsonData = advanceFuture.get();
 			mLogger.finer("Data:" + jsonData);
 			if (jsonData != null) {
@@ -221,8 +232,12 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerDataLoadEvent(PlayerDataLoadEvent event) {
 		Player player = event.getPlayer();
+
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading data for player=" + player.getName());
+
+		/* Wait until player has finished saving if they just logged out and back in */
+		blockingWaitForPlayerToSave(player);
 
 		/* Load the primary shared NBT data */
 		byte[] data = RedisAPI.getInstance().syncStringBytes().lindex(MonumentaRedisSyncAPI.getRedisDataPath(player), 0);
