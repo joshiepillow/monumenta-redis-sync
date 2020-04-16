@@ -183,7 +183,7 @@ public class VersionAdapter113 implements VersionAdapter {
 			NBTTagList list = nbt.getList(key, 5);  // 5 = float list
 			JsonArray arr = new JsonArray();
 			for (int i = 0; i < list.size(); i++) {
-				arr.add(list.k(i));
+				arr.add(list.l(i));
 			}
 			obj.add(key, arr);
 			nbt.remove(key);
