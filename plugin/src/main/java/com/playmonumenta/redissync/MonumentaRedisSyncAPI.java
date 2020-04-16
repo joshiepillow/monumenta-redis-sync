@@ -263,6 +263,74 @@ public class MonumentaRedisSyncAPI {
 		}.runTaskAsynchronously(mrs);
 	}
 
+	public static void playerRollback(Player moderator, Player player, int index) throws Exception {
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		/*
+		 * Save player in case this was a mistake so they can get back
+		 * This also saves per-shard data like location
+		 */
+		try {
+			mrs.getVersionAdapter().savePlayer(player);
+		} catch (Exception ex) {
+			String message = "Failed to save player data for player '" + player.getName() + "'";
+			mrs.getLogger().severe(message);
+			ex.printStackTrace();
+			CommandAPI.fail(message);
+		}
+
+		/* Now that data has saved, the index we want to roll back to is +1 older */
+		final int rollbackIndex = index + 1;
+
+		/* Lock player during stash get */
+		DataEventListener.setPlayerAsTransferring(player);
+
+		/* Wait for save to complete */
+		DataEventListener.waitForPlayerToSaveThenAsync(player, () -> {
+			List<RedisFuture<?>> futures = new ArrayList<>();
+
+			RedisAPI api = RedisAPI.getInstance();
+
+			try {
+				/* Read from the stash, and push it to the player's data */
+
+				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(getRedisDataPath(player), rollbackIndex);
+				RedisFuture<String> advanceFuture = api.async().lindex(getRedisAdvancementsPath(player), rollbackIndex);
+				RedisFuture<String> scoreFuture = api.async().lindex(getRedisScoresPath(player), rollbackIndex);
+				RedisFuture<String> historyFuture = api.async().lindex(getRedisHistoryPath(player), rollbackIndex);
+
+				/* Make sure there's actually data */
+				if (dataFuture.get() == null || advanceFuture.get() == null || scoreFuture.get() == null || historyFuture.get() == null) {
+					moderator.sendMessage(ChatColor.RED + "Failed to retrieve player's rollback data");
+					return;
+				}
+
+				futures.add(api.asyncStringBytes().lpush(MonumentaRedisSyncAPI.getRedisDataPath(player), dataFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(player), advanceFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisScoresPath(player), scoreFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(player), "rollback@" + historyFuture.get()));
+
+				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading rollback data for player '" + player.getName() + "'");
+					moderator.sendMessage(ChatColor.RED + "Got timeout loading rollback data");
+				}
+			} catch (InterruptedException | ExecutionException ex) {
+				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading rollback data for player '" + player.getName() + "'");
+				ex.printStackTrace();
+				moderator.sendMessage(ChatColor.RED + "Failed to load rollback data: " + ex.getMessage());
+			}
+
+			moderator.sendMessage(ChatColor.GREEN + "Player " + player.getName() + " rolled back successfully");
+
+			/* Kick the player on the main thread to force rejoin */
+			Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kickPlayer("Your player data has been rolled back, and you can now re-join the server"));
+		});
+	}
+
+
 	public static String getRedisDataPath(Player player) {
 		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
 	}
