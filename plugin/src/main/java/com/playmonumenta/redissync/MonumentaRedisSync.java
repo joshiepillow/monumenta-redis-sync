@@ -7,7 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.playmonumenta.redissync.adapters.VersionAdapter;
-import com.playmonumenta.redissync.adapters.VersionAdapter113;
+import com.playmonumenta.redissync.adapters.VersionAdapter115;
 import com.playmonumenta.redissync.commands.PlayerHistory;
 import com.playmonumenta.redissync.commands.PlayerLoadFromPlayer;
 import com.playmonumenta.redissync.commands.PlayerRollback;
@@ -21,7 +21,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	@Override
 	public void onLoad() {
-		mVersionAdapter = new VersionAdapter113();
+		mVersionAdapter = new VersionAdapter115();
 
 		/*
 		 * CommandAPI commands which register directly and are usable in functions

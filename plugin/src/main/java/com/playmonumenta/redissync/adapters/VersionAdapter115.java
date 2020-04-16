@@ -7,8 +7,8 @@ import java.lang.reflect.Method;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_13_R2.CraftServer;
-import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_15_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import com.google.gson.Gson;
@@ -17,15 +17,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.DataEventListener.ReturnParams;
 
-import net.minecraft.server.v1_13_R2.EntityPlayer;
-import net.minecraft.server.v1_13_R2.NBTCompressedStreamTools;
-import net.minecraft.server.v1_13_R2.NBTTagCompound;
-import net.minecraft.server.v1_13_R2.NBTTagDouble;
-import net.minecraft.server.v1_13_R2.NBTTagFloat;
-import net.minecraft.server.v1_13_R2.NBTTagList;
-import net.minecraft.server.v1_13_R2.PlayerList;
+import net.minecraft.server.v1_15_R1.EntityPlayer;
+import net.minecraft.server.v1_15_R1.NBTCompressedStreamTools;
+import net.minecraft.server.v1_15_R1.NBTTagCompound;
+import net.minecraft.server.v1_15_R1.NBTTagDouble;
+import net.minecraft.server.v1_15_R1.NBTTagFloat;
+import net.minecraft.server.v1_15_R1.NBTTagList;
+import net.minecraft.server.v1_15_R1.PlayerList;
 
-public class VersionAdapter113 implements VersionAdapter {
+public class VersionAdapter115 implements VersionAdapter {
 	private Gson mGson = new Gson();
 	private Method mSaveMethod = null;
 
@@ -112,7 +112,7 @@ public class VersionAdapter113 implements VersionAdapter {
         NBTTagList nbttaglist = new NBTTagList();
 
 		for (double d : doubles) {
-            nbttaglist.add(new NBTTagDouble(d));
+            nbttaglist.add(NBTTagDouble.a(d));
 		}
 
         return nbttaglist;
@@ -148,7 +148,7 @@ public class VersionAdapter113 implements VersionAdapter {
 			if (element.isJsonArray()) {
 				NBTTagList nbttaglist = new NBTTagList();
 				for (JsonElement val : element.getAsJsonArray()) {
-					nbttaglist.add(new NBTTagFloat(val.getAsFloat()));
+					nbttaglist.add(NBTTagFloat.a(val.getAsFloat()));
 				}
 				nbt.set(key, nbttaglist);
 			}
@@ -161,7 +161,7 @@ public class VersionAdapter113 implements VersionAdapter {
 			if (element.isJsonArray()) {
 				NBTTagList nbttaglist = new NBTTagList();
 				for (JsonElement val : element.getAsJsonArray()) {
-					nbttaglist.add(new NBTTagDouble(val.getAsDouble()));
+					nbttaglist.add(NBTTagDouble.a(val.getAsDouble()));
 				}
 				nbt.set(key, nbttaglist);
 			}
@@ -201,7 +201,7 @@ public class VersionAdapter113 implements VersionAdapter {
 			NBTTagList list = nbt.getList(key, 5);  // 5 = float list
 			JsonArray arr = new JsonArray();
 			for (int i = 0; i < list.size(); i++) {
-				arr.add(list.l(i));
+				arr.add(list.i(i));
 			}
 			obj.add(key, arr);
 			nbt.remove(key);
@@ -213,7 +213,7 @@ public class VersionAdapter113 implements VersionAdapter {
 			NBTTagList list = nbt.getList(key, 6);  // 6 = double list
 			JsonArray arr = new JsonArray();
 			for (int i = 0; i < list.size(); i++) {
-				arr.add(list.k(i));
+				arr.add(list.h(i));
 			}
 			obj.add(key, arr);
 			nbt.remove(key);
