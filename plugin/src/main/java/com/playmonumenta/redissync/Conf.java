@@ -8,6 +8,7 @@ public class Conf {
 	private final String mDomain;
 	private final String mShard;
 	private final int mHistory;
+	private final boolean mSavingDisabled;
 
 	protected static String getHost() {
 		return INSTANCE.mHost;
@@ -29,21 +30,27 @@ public class Conf {
 		return INSTANCE.mHistory;
 	}
 
+	protected static boolean getSavingDisabled() {
+		return INSTANCE.mSavingDisabled;
+	}
+
 	protected Conf(String host, int port, String shard) {
 		mHost = host;
 		mPort = port;
 		mDomain = null;
 		mShard = shard;
 		mHistory = -1;
+		mSavingDisabled = false;
 		INSTANCE = this;
 	}
 
-	protected Conf(String host, int port, String domain, String shard, int history) {
+	protected Conf(String host, int port, String domain, String shard, int history, boolean savingDisabled) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;
 		mShard = shard;
 		mHistory = history;
+		mSavingDisabled = savingDisabled;
 		INSTANCE = this;
 	}
 }

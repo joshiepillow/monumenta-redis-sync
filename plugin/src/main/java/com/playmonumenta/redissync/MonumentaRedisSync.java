@@ -73,6 +73,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		String domain = config.getString("server_domain", "default_domain");
 		String shard = config.getString("shard_name", "default_shard");
 		int history = config.getInt("history_amount", 20);
-		new Conf(host, port, domain, shard, history);
+		boolean savingDisabled = config.getBoolean("saving_disabled", false);
+		new Conf(host, port, domain, shard, history, savingDisabled);
 	}
 }

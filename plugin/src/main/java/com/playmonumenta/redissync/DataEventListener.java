@@ -101,7 +101,7 @@ public class DataEventListener implements Listener {
 	private void waitForPlayerToSaveInternal(Player player, Runnable callback, boolean sync) {
 		Plugin plugin = MonumentaRedisSync.getInstance();
 
-		if (!mPendingSaves.containsKey(player.getUniqueId())) {
+		if (!mPendingSaves.containsKey(player.getUniqueId()) && !Conf.getSavingDisabled()) {
 			mLogger.warning("Got request to wait for save commit but no pending save operations found. This might be a bug with the plugin that uses MonumentaRedisSync");
 		}
 
@@ -146,6 +146,11 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
 		Player player = event.getPlayer();
+
+		if (Conf.getSavingDisabled()) {
+			/* No data saved, no data loaded */
+			return;
+		}
 
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading advancements data for player=" + player.getName());
@@ -192,6 +197,11 @@ public class DataEventListener implements Listener {
 		/* Always cancel saving the player file to disk with this plugin present */
 		event.setCancelled(true);
 
+		if (Conf.getSavingDisabled()) {
+			/* No data saved, no data loaded */
+			return;
+		}
+
 		Player player = event.getPlayer();
 		if (isPlayerTransferring(player)) {
 			mLogger.fine("Ignoring PlayerAdvancementDataSaveEvent for player:" + player.getName());
@@ -233,6 +243,11 @@ public class DataEventListener implements Listener {
 	public void playerDataLoadEvent(PlayerDataLoadEvent event) {
 		Player player = event.getPlayer();
 
+		if (Conf.getSavingDisabled()) {
+			/* No data saved, no data loaded */
+			return;
+		}
+
 		/* TODO: Decrease verbosity */
 		mLogger.info("Loading data for player=" + player.getName());
 
@@ -268,6 +283,11 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerDataSaveEvent(PlayerDataSaveEvent event) {
 		event.setCancelled(true);
+
+		if (Conf.getSavingDisabled()) {
+			/* No data saved, no data loaded */
+			return;
+		}
 
 		Player player = event.getPlayer();
 		if (isPlayerTransferring(player)) {
