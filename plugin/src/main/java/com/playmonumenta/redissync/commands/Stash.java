@@ -38,7 +38,7 @@ public class Stash {
 		);
 
 		/* Optional argument version */
-		arguments.put("server", new StringArgument());
+		arguments.put("name", new StringArgument());
 		CommandAPI.getInstance().register(command,
 		                                  perms,
 		                                  arguments,
@@ -74,7 +74,7 @@ public class Stash {
 		);
 
 		/* Optional argument version */
-		arguments.put("server", new StringArgument());
+		arguments.put("name", new StringArgument());
 		CommandAPI.getInstance().register(command,
 		                                  perms,
 		                                  arguments,
@@ -110,7 +110,7 @@ public class Stash {
 		);
 
 		/* Optional argument version */
-		arguments.put("server", new StringArgument());
+		arguments.put("name", new StringArgument());
 		CommandAPI.getInstance().register(command,
 		                                  perms,
 		                                  arguments,

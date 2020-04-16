@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.adapters.VersionAdapter113;
+import com.playmonumenta.redissync.commands.PlayerHistory;
 import com.playmonumenta.redissync.commands.Stash;
 import com.playmonumenta.redissync.commands.TransferServer;
 
@@ -27,6 +28,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		 */
 		TransferServer.register(this);
 		Stash.register();
+		PlayerHistory.register(this);
 	}
 
 	@Override

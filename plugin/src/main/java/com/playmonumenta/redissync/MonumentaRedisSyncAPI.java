@@ -206,7 +206,7 @@ public class MonumentaRedisSyncAPI {
 				futures.add(api.asyncStringBytes().lpush(MonumentaRedisSyncAPI.getRedisDataPath(player), dataFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(player), advanceFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisScoresPath(player), scoreFuture.get()));
-				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(player), historyFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(player), "stash@" + historyFuture.get()));
 
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading stash data for player '" + player.getName() + "'");
@@ -248,16 +248,16 @@ public class MonumentaRedisSyncAPI {
 					return;
 				}
 
-				String[] split = history.split("|");
+				String[] split = history.split("\\|");
 				if (split.length != 3) {
-					player.sendMessage(ChatColor.RED + "Got corrupted history with " + Integer.toString(split.length) + " entries");
+					player.sendMessage(ChatColor.RED + "Got corrupted history with " + Integer.toString(split.length) + " entries: " + history);
 					return;
 				}
 
 				if (name == null) {
-					player.sendMessage(ChatColor.GOLD + "Stash last saved on " + split[0] + " " + getTimeDifferenceSince(Integer.parseInt(split[1])) + " ago");
+					player.sendMessage(ChatColor.GOLD + "Stash last saved on " + split[0] + " " + getTimeDifferenceSince(Long.parseLong(split[1])) + " ago");
 				} else {
-					player.sendMessage(ChatColor.GOLD + "Stash '" + name + "' last saved on " + split[0] + " by " + split[2] + " " + getTimeDifferenceSince(Integer.parseInt(split[1])) + " ago");
+					player.sendMessage(ChatColor.GOLD + "Stash '" + name + "' last saved on " + split[0] + " by " + split[2] + " " + getTimeDifferenceSince(Long.parseLong(split[1])) + " ago");
 				}
 			}
 		}.runTaskAsynchronously(mrs);
@@ -328,11 +328,11 @@ public class MonumentaRedisSyncAPI {
 			}
 		}
 
-		if (diffMinutes > 0 && diffSeconds > 0) {
+		if (diffMinutes > 0 && diffSeconds > 0 && (diffDays == 0 && diffHours == 0)) {
 			timeStr += " ";
 		}
 
-		if (diffSeconds > 0) {
+		if (diffSeconds > 0 && (diffDays == 0 && diffHours == 0)) {
 			timeStr += Long.toString(diffSeconds) + " second";
 			if (diffSeconds > 1) {
 				timeStr += "s";
