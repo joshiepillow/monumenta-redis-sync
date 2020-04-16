@@ -49,7 +49,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 	@Override
 	public void onDisable() {
 		INSTANCE = null;
-		mRedisAPI.shutdown();
+		if (mRedisAPI != null) {
+			mRedisAPI.shutdown();
+		}
 		mRedisAPI = null;
 		getServer().getScheduler().cancelTasks(this);
 	}

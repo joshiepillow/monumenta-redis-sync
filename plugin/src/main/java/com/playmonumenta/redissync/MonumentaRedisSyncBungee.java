@@ -23,7 +23,9 @@ public class MonumentaRedisSyncBungee extends Plugin {
 
 	@Override
 	public void onDisable() {
-		mRedisAPI.shutdown();
+		if (mRedisAPI != null) {
+			mRedisAPI.shutdown();
+		}
 		mRedisAPI = null;
 	}
 
