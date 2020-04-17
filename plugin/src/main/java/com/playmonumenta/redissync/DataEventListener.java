@@ -6,12 +6,14 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -61,14 +63,27 @@ import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 
 public class DataEventListener implements Listener {
+	public static class ReturnParams {
+		public final Location mReturnLoc;
+		public final Float mReturnYaw;
+		public final Float mReturnPitch;
+
+		private ReturnParams(Location returnLoc, Float returnYaw, Float returnPitch) {
+			mReturnLoc = returnLoc;
+			mReturnYaw = returnYaw;
+			mReturnPitch = returnPitch;
+		}
+	}
+
 	private static DataEventListener INSTANCE = null;
 
 	private final Gson mGson = new Gson();
 	private final Logger mLogger;
 	private final VersionAdapter mAdapter;
-	private final Set<UUID> mTransferringPlayers = new HashSet<UUID>();
+	private final Set<UUID> mTransferringPlayers = new HashSet<>();
+	private final Map<UUID, ReturnParams> mReturnParams = new HashMap<>();
 
-	private final HashMap<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
+	private final Map<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
 
 	protected DataEventListener(Logger logger, VersionAdapter adapter) {
 		mLogger = logger;
@@ -82,8 +97,13 @@ public class DataEventListener implements Listener {
 		INSTANCE.mTransferringPlayers.add(player.getUniqueId());
 	}
 
+	protected static void setPlayerReturnParams(Player player, Location returnLoc, Float returnYaw, Float returnPitch) {
+		INSTANCE.mReturnParams.put(player.getUniqueId(), new ReturnParams(returnLoc, returnYaw, returnPitch));
+	}
+
 	protected static void setPlayerAsNotTransferring(Player player) {
 		INSTANCE.mTransferringPlayers.remove(player.getUniqueId());
+		INSTANCE.mReturnParams.remove(player.getUniqueId());
 	}
 
 	protected static boolean isPlayerTransferring(Player player) {
@@ -306,7 +326,9 @@ public class DataEventListener implements Listener {
 		}
 
 		try {
-			SaveData data = mAdapter.extractSaveData(player, event.getData());
+			/* Grab the return parameters if they were set when starting transfer. If they are null, that's fine too */
+			ReturnParams returnParams = mReturnParams.get(player.getUniqueId());
+			SaveData data = mAdapter.extractSaveData(player, event.getData(), returnParams);
 
 			mLogger.finer("data: " + b64encode(data.getData()));
 			mLogger.finer("sharddata: " + data.getShardData());

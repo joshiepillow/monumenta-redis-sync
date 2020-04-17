@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -46,6 +47,14 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static void sendPlayer(Plugin plugin, Player player, String target) throws Exception {
+		sendPlayer(plugin, player, target, null);
+	}
+
+	public static void sendPlayer(Plugin plugin, Player player, String target, Location returnLoc) throws Exception {
+		sendPlayer(plugin, player, target, returnLoc, null, null);
+	}
+
+	public static void sendPlayer(Plugin plugin, Player player, String target, Location returnLoc, Float returnYaw, Float returnPitch) throws Exception {
 		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");
@@ -59,6 +68,11 @@ public class MonumentaRedisSyncAPI {
 		}
 
 		/* TODO: Something to check if the player is already transferring */
+
+		/* If any return params were specified, mark them on the player */
+		if (returnLoc != null || returnYaw != null || returnPitch != null) {
+			DataEventListener.setPlayerReturnParams(player, returnLoc, returnYaw, returnPitch);
+		}
 
 		PlayerServerTransferEvent event = new PlayerServerTransferEvent(player, target);
 		Bukkit.getPluginManager().callEvent(event);

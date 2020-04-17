@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.playmonumenta.redissync.DataEventListener.ReturnParams;
 
 import net.minecraft.server.v1_13_R2.EntityPlayer;
 import net.minecraft.server.v1_13_R2.NBTCompressedStreamTools;
@@ -57,7 +58,7 @@ public class VersionAdapter113 implements VersionAdapter {
 		return nbt;
 	}
 
-	public SaveData extractSaveData(Player player, Object nbtObj) throws IOException {
+	public SaveData extractSaveData(Player player, Object nbtObj, ReturnParams returnParams) throws IOException {
 		NBTTagCompound nbt = (NBTTagCompound) nbtObj;
 
 		JsonObject obj = new JsonObject();
@@ -73,6 +74,23 @@ public class VersionAdapter113 implements VersionAdapter {
 		copyDoubleList(obj, nbt, "Pos");
 		copyDoubleList(obj, nbt, "Motion");
 		copyFloatList(obj, nbt, "Rotation");
+
+		if (returnParams != null && returnParams.mReturnLoc != null) {
+			JsonArray arr = new JsonArray();
+			arr.add(returnParams.mReturnLoc.getX());
+			arr.add(returnParams.mReturnLoc.getY());
+			arr.add(returnParams.mReturnLoc.getZ());
+			obj.remove("Pos");
+			obj.add("Pos", arr);
+		}
+
+		if (returnParams != null && returnParams.mReturnPitch != null && returnParams.mReturnYaw != null) {
+			JsonArray arr = new JsonArray();
+			arr.add(returnParams.mReturnPitch);
+			arr.add(returnParams.mReturnYaw);
+			obj.remove("Rotation");
+			obj.add("Rotation", arr);
+		}
 
 		ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
 		NBTCompressedStreamTools.a(nbt, outBytes);

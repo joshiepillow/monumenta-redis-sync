@@ -3,6 +3,7 @@ package com.playmonumenta.redissync.commands;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -13,6 +14,8 @@ import io.github.jorelali.commandapi.api.CommandPermission;
 import io.github.jorelali.commandapi.api.arguments.Argument;
 import io.github.jorelali.commandapi.api.arguments.EntitySelectorArgument;
 import io.github.jorelali.commandapi.api.arguments.EntitySelectorArgument.EntitySelector;
+import io.github.jorelali.commandapi.api.arguments.FloatArgument;
+import io.github.jorelali.commandapi.api.arguments.LocationArgument;
 import io.github.jorelali.commandapi.api.arguments.StringArgument;
 
 public class TransferServer {
@@ -32,6 +35,37 @@ public class TransferServer {
 											  for (Player player : (Collection<Player>)args[0]) {
 												  try {
 													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1]);
+												  } catch (Exception ex) {
+													  CommandAPI.fail(ex.getMessage());
+												  }
+											  }
+		                                  }
+		);
+
+		arguments.put("location", new LocationArgument());
+		CommandAPI.getInstance().register(command,
+		                                  perms,
+		                                  arguments,
+		                                  (sender, args) -> {
+											  for (Player player : (Collection<Player>)args[0]) {
+												  try {
+													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2]);
+												  } catch (Exception ex) {
+													  CommandAPI.fail(ex.getMessage());
+												  }
+											  }
+		                                  }
+		);
+
+		arguments.put("yaw", new FloatArgument());
+		arguments.put("pitch", new FloatArgument());
+		CommandAPI.getInstance().register(command,
+		                                  perms,
+		                                  arguments,
+		                                  (sender, args) -> {
+											  for (Player player : (Collection<Player>)args[0]) {
+												  try {
+													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2], (Float)args[3], (Float)args[4]);
 												  } catch (Exception ex) {
 													  CommandAPI.fail(ex.getMessage());
 												  }
