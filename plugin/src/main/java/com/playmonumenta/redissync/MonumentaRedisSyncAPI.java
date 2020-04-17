@@ -60,6 +60,11 @@ public class MonumentaRedisSyncAPI {
 			throw new Exception("MonumentaRedisSync is not loaded!");
 		}
 
+		/* Don't allow transferring while transferring */
+		if (DataEventListener.isPlayerTransferring(player)) {
+			return;
+		}
+
 		long startTime = System.currentTimeMillis();
 
 		if (target.equalsIgnoreCase(Conf.getShard())) {
