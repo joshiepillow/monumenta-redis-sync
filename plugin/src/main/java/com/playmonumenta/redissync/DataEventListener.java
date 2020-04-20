@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -61,6 +62,7 @@ import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 
 public class DataEventListener implements Listener {
 	public static class ReturnParams {
@@ -352,7 +354,14 @@ public class DataEventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void playerJoinEvent(PlayerJoinEvent event) {
-		setPlayerAsNotTransferring(event.getPlayer());
+		Player player = event.getPlayer();
+		String nameStr = player.getName();
+		String uuidStr = player.getUniqueId().toString();
+
+		Bukkit.getServer().getScheduler().runTaskAsynchronously(MonumentaRedisSync.getInstance(), () -> {
+			RedisAPI.getInstance().async().hset("uuid2name", uuidStr, nameStr);
+			RedisAPI.getInstance().async().hset("name2uuid", nameStr, uuidStr);
+		});
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
