@@ -355,6 +355,9 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void playerJoinEvent(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
+
+		setPlayerAsNotTransferring(player);
+
 		String nameStr = player.getName();
 		String uuidStr = player.getUniqueId().toString();
 
