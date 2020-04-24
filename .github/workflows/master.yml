@@ -1,12 +1,14 @@
-name: Java CI
+name: Build and deploy master
 
 on:
   push:
     branches:
-      - master
+    - master
+    tags:
+    - '*'
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -26,6 +28,11 @@ jobs:
     - name: Build Paper
       working-directory: ./Paper
       run: ./paper jar
-    - name: Build with Maven
+    - name: Deploy to Github Package Registry
       working-directory: ./plugin
-      run: ./compile.sh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        mkdir -p ~/.m2
+        echo "<settings><servers><server><id>github</id><username>x-access-token</username><password>${GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
+        ./deploy.sh
