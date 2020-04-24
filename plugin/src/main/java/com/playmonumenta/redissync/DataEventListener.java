@@ -162,16 +162,17 @@ public class DataEventListener implements Listener {
 				/* TODO: Verbosity */
 				mLogger.info("Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
 
+				/* Run the callback after about 150ms have passed to make sure the redis changes commit */
 				if (sync) {
 					/* Run the sync callback on the main thread */
-					new BukkitRunnable() {
-						public void run() {
-							callback.run();
-						}
-					}.runTask(plugin);
+					Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> {
+						callback.run();
+					}, 3);
 				} else {
-					/* Run the async callback directly */
-					callback.run();
+					/* Run the async callback */
+					Bukkit.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+						callback.run();
+					}, 3);
 				}
 			}
 		}.runTaskAsynchronously(plugin);
