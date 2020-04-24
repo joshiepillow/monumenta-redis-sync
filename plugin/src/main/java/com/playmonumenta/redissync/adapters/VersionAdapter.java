@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import com.playmonumenta.redissync.DataEventListener.ReturnParams;
 
 public interface VersionAdapter {
-	public static class SaveData {
+	class SaveData {
 		private final byte[] mData;
 		private final String mShardData;
 
@@ -26,6 +26,8 @@ public interface VersionAdapter {
 	}
 
 	Object retrieveSaveData(Player player, byte[] data, String shardData) throws IOException;
+
 	SaveData extractSaveData(Player player, Object nbtObj, ReturnParams returnParams) throws IOException;
+
 	void savePlayer(Player player) throws Exception;
 }

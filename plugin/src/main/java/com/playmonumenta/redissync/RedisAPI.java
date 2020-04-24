@@ -14,11 +14,11 @@ public class RedisAPI {
 	private static final class StringByteCodec implements RedisCodec<String, byte[]> {
 		private static final StringByteCodec INSTANCE = new StringByteCodec();
 		private static final byte[] EMPTY = new byte[0];
-		private final Charset charset = Charset.forName("UTF-8");
+		private final Charset mCharset = Charset.forName("UTF-8");
 
 		@Override
 		public String decodeKey(final ByteBuffer bytes) {
-			return charset.decode(bytes).toString();
+			return mCharset.decode(bytes).toString();
 		}
 
 		@Override
@@ -28,7 +28,7 @@ public class RedisAPI {
 
 		@Override
 		public ByteBuffer encodeKey(final String key) {
-			return charset.encode(key);
+			return mCharset.encode(key);
 		}
 
 		@Override
