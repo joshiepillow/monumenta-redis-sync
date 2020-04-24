@@ -86,8 +86,8 @@ public class VersionAdapter113 implements VersionAdapter {
 
 		if (returnParams != null && returnParams.mReturnPitch != null && returnParams.mReturnYaw != null) {
 			JsonArray arr = new JsonArray();
-			arr.add(returnParams.mReturnPitch);
 			arr.add(returnParams.mReturnYaw);
+			arr.add(returnParams.mReturnPitch);
 			obj.remove("Rotation");
 			obj.add("Rotation", arr);
 		}
