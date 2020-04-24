@@ -67,4 +67,4 @@ the Monumenta Discord (https://discord.gg/eep9qcu) and message @Combustible.
 
 ## Download
 
-You can download the Monumenta Redis Sync plugin from [GitHub Packages](https://github.com/TeamMonumenta/scripted-quests/packages).
+You can download the Monumenta Redis Sync plugin from [GitHub Packages](https://github.com/TeamMonumenta/monumenta-redis-sync/packages).
