@@ -2,9 +2,10 @@ package com.playmonumenta.redissync.commands;
 
 import java.util.LinkedHashMap;
 
-import org.bukkit.entity.Player;
-
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
+
+import org.bukkit.command.ProxiedCommandSender;
+import org.bukkit.entity.Player;
 
 import io.github.jorelali.commandapi.api.CommandAPI;
 import io.github.jorelali.commandapi.api.CommandPermission;
@@ -26,8 +27,11 @@ public class Stash {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
+											  if (sender instanceof ProxiedCommandSender) {
+												  sender = ((ProxiedCommandSender)sender).getCallee();
+											  }
 											  if (!(sender instanceof Player)) {
-												  CommandAPI.fail("This command can only be run by players");
+												  CommandAPI.fail("This command can only be run by/as players");
 											  }
 											  try {
 												  MonumentaRedisSyncAPI.stashPut((Player)sender, null);
@@ -43,8 +47,11 @@ public class Stash {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
+											  if (sender instanceof ProxiedCommandSender) {
+												  sender = ((ProxiedCommandSender)sender).getCallee();
+											  }
 											  if (!(sender instanceof Player)) {
-												  CommandAPI.fail("This command can only be run by players");
+												  CommandAPI.fail("This command can only be run by/as players");
 											  }
 											  try {
 												  MonumentaRedisSyncAPI.stashPut((Player)sender, (String)args[0]);
@@ -62,8 +69,11 @@ public class Stash {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
+											  if (sender instanceof ProxiedCommandSender) {
+												  sender = ((ProxiedCommandSender)sender).getCallee();
+											  }
 											  if (!(sender instanceof Player)) {
-												  CommandAPI.fail("This command can only be run by players");
+												  CommandAPI.fail("This command can only be run by/as players");
 											  }
 											  try {
 												  MonumentaRedisSyncAPI.stashGet((Player)sender, null);
@@ -79,8 +89,11 @@ public class Stash {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
+											  if (sender instanceof ProxiedCommandSender) {
+												  sender = ((ProxiedCommandSender)sender).getCallee();
+											  }
 											  if (!(sender instanceof Player)) {
-												  CommandAPI.fail("This command can only be run by players");
+												  CommandAPI.fail("This command can only be run by/as players");
 											  }
 											  try {
 												  MonumentaRedisSyncAPI.stashGet((Player)sender, (String)args[0]);
