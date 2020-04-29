@@ -10,6 +10,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -17,11 +21,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
-import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
-
 import io.github.jorelali.commandapi.api.CommandAPI;
+import io.github.jorelali.commandapi.api.exceptions.WrapperCommandSyntaxException;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 
@@ -85,14 +86,7 @@ public class MonumentaRedisSyncAPI {
 
 		player.sendMessage(ChatColor.GOLD + "Transferring you to " + target);
 
-		try {
-			mrs.getVersionAdapter().savePlayer(player);
-		} catch (Exception ex) {
-			String message = "Failed to save player data for player '" + player.getName() + "'";
-			mrs.getLogger().severe(message);
-			ex.printStackTrace();
-			CommandAPI.fail(message);
-		}
+		savePlayer(mrs, player);
 
 		/* Lock player during transfer and prevent data saving when they log out */
 		DataEventListener.setPlayerAsTransferring(player);
@@ -120,14 +114,7 @@ public class MonumentaRedisSyncAPI {
 			throw new Exception("MonumentaRedisSync is not loaded!");
 		}
 
-		try {
-			mrs.getVersionAdapter().savePlayer(player);
-		} catch (Exception ex) {
-			String message = "Failed to save player data for player '" + player.getName() + "'";
-			mrs.getLogger().severe(message);
-			ex.printStackTrace();
-			CommandAPI.fail(message);
-		}
+		savePlayer(mrs, player);
 
 		DataEventListener.waitForPlayerToSaveThenAsync(player, () -> {
 			List<RedisFuture<?>> futures = new ArrayList<>();
@@ -156,11 +143,13 @@ public class MonumentaRedisSyncAPI {
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout waiting to commit stash data for player '" + player.getName() + "'");
 					player.sendMessage(ChatColor.RED + "Got timeout trying to commit stash data");
+					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
 				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while committing stash data for player '" + player.getName() + "'");
 				ex.printStackTrace();
 				player.sendMessage(ChatColor.RED + "Failed to save stash data: " + ex.getMessage());
+				return;
 			}
 
 			player.sendMessage(ChatColor.GOLD + "Data, scores, advancements saved to stash successfully");
@@ -177,14 +166,7 @@ public class MonumentaRedisSyncAPI {
 		 * Save player in case this was a mistake so they can get back
 		 * This also saves per-shard data like location
 		 */
-		try {
-			mrs.getVersionAdapter().savePlayer(player);
-		} catch (Exception ex) {
-			String message = "Failed to save player data for player '" + player.getName() + "'";
-			mrs.getLogger().severe(message);
-			ex.printStackTrace();
-			CommandAPI.fail(message);
-		}
+		savePlayer(mrs, player);
 
 		/* Lock player during stash get */
 		DataEventListener.setPlayerAsTransferring(player);
@@ -226,11 +208,13 @@ public class MonumentaRedisSyncAPI {
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading stash data for player '" + player.getName() + "'");
 					player.sendMessage(ChatColor.RED + "Got timeout loading stash data");
+					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
 				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading stash data for player '" + player.getName() + "'");
 				ex.printStackTrace();
 				player.sendMessage(ChatColor.RED + "Failed to load stash data: " + ex.getMessage());
+				return;
 			}
 
 			/* Kick the player on the main thread to force rejoin */
@@ -288,19 +272,12 @@ public class MonumentaRedisSyncAPI {
 		 * Save player in case this was a mistake so they can get back
 		 * This also saves per-shard data like location
 		 */
-		try {
-			mrs.getVersionAdapter().savePlayer(player);
-		} catch (Exception ex) {
-			String message = "Failed to save player data for player '" + player.getName() + "'";
-			mrs.getLogger().severe(message);
-			ex.printStackTrace();
-			CommandAPI.fail(message);
-		}
+		savePlayer(mrs, player);
 
 		/* Now that data has saved, the index we want to roll back to is +1 older */
 		final int rollbackIndex = index + 1;
 
-		/* Lock player during stash get */
+		/* Lock player during rollback */
 		DataEventListener.setPlayerAsTransferring(player);
 
 		/* Wait for save to complete */
@@ -310,7 +287,7 @@ public class MonumentaRedisSyncAPI {
 			RedisAPI api = RedisAPI.getInstance();
 
 			try {
-				/* Read from the stash, and push it to the player's data */
+				/* Read the history element and push it to the player's data */
 
 				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(getRedisDataPath(player), rollbackIndex);
 				RedisFuture<String> advanceFuture = api.async().lindex(getRedisAdvancementsPath(player), rollbackIndex);
@@ -331,11 +308,13 @@ public class MonumentaRedisSyncAPI {
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading rollback data for player '" + player.getName() + "'");
 					moderator.sendMessage(ChatColor.RED + "Got timeout loading rollback data");
+					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
 				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading rollback data for player '" + player.getName() + "'");
 				ex.printStackTrace();
 				moderator.sendMessage(ChatColor.RED + "Failed to load rollback data: " + ex.getMessage());
+				return;
 			}
 
 			moderator.sendMessage(ChatColor.GREEN + "Player " + player.getName() + " rolled back successfully");
@@ -345,6 +324,62 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
+	public static void playerLoadFromPlayer(Player loadto, Player loadfrom, int index) throws Exception {
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		/*
+		 * Save player in case this was a mistake so they can get back
+		 * This also saves per-shard data like location
+		 */
+		savePlayer(mrs, loadto);
+
+		/* Lock player during load */
+		DataEventListener.setPlayerAsTransferring(loadto);
+
+		/* Wait for save to complete */
+		DataEventListener.waitForPlayerToSaveThenAsync(loadto, () -> {
+			List<RedisFuture<?>> futures = new ArrayList<>();
+
+			RedisAPI api = RedisAPI.getInstance();
+
+			try {
+				/* Read the history element and push it to the player's data */
+
+				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(getRedisDataPath(loadfrom), index);
+				RedisFuture<String> advanceFuture = api.async().lindex(getRedisAdvancementsPath(loadfrom), index);
+				RedisFuture<String> scoreFuture = api.async().lindex(getRedisScoresPath(loadfrom), index);
+				RedisFuture<String> historyFuture = api.async().lindex(getRedisHistoryPath(loadfrom), index);
+
+				/* Make sure there's actually data */
+				if (dataFuture.get() == null || advanceFuture.get() == null || scoreFuture.get() == null || historyFuture.get() == null) {
+					loadto.sendMessage(ChatColor.RED + "Failed to retrieve player's data to load");
+					return;
+				}
+
+				futures.add(api.asyncStringBytes().lpush(MonumentaRedisSyncAPI.getRedisDataPath(loadto), dataFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(loadto), advanceFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisScoresPath(loadto), scoreFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(loadto), "loadfrom@" + loadfrom.getName() + "@" + historyFuture.get()));
+
+				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading data for player '" + loadfrom.getName() + "'");
+					loadto.sendMessage(ChatColor.RED + "Got timeout loading data");
+					return;
+				}
+			} catch (InterruptedException | ExecutionException ex) {
+				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading data for player '" + loadfrom.getName() + "'");
+				ex.printStackTrace();
+				loadto.sendMessage(ChatColor.RED + "Failed to load data: " + ex.getMessage());
+				return;
+			}
+
+			/* Kick the player on the main thread to force rejoin */
+			Bukkit.getServer().getScheduler().runTask(mrs, () -> loadto.kickPlayer("Data loaded from player " + loadfrom.getName() + " at index " + Integer.toString(index) + " and you can now re-join the server"));
+		});
+	}
 
 	public static String getRedisDataPath(Player player) {
 		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
@@ -425,5 +460,15 @@ public class MonumentaRedisSyncAPI {
 		return timeStr;
 	}
 
+	private static void savePlayer(MonumentaRedisSync mrs, Player player) throws WrapperCommandSyntaxException {
+		try {
+			mrs.getVersionAdapter().savePlayer(player);
+		} catch (Exception ex) {
+			String message = "Failed to save player data for player '" + player.getName() + "'";
+			mrs.getLogger().severe(message);
+			ex.printStackTrace();
+			CommandAPI.fail(message);
+		}
+	}
 }
 
