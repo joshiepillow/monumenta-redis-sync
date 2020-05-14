@@ -1,6 +1,7 @@
 package com.playmonumenta.redissync;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,7 @@ import io.github.jorelali.commandapi.api.CommandAPI;
 import io.github.jorelali.commandapi.api.exceptions.WrapperCommandSyntaxException;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
+import io.lettuce.core.ScoredValue;
 
 public class MonumentaRedisSyncAPI {
 	public static final int TIMEOUT_SECONDS = 10;
@@ -470,5 +472,49 @@ public class MonumentaRedisSyncAPI {
 			CommandAPI.fail(message);
 		}
 	}
-}
 
+	/**
+	 * Retrieve the leaderboard entries between the specified start and stop indices (inclusive)
+	 *
+	 * @param objective The leaderboard objective name (one leaderboard per objective)
+	 * @param start Starting index to retrieve (inclusive)
+	 * @param stop Ending index to retrieve (inclusive)
+	 * @param ascending If true, leaderboard and results are smallest to largest and vice versa
+	 */
+	public static CompletableFuture<Map<String, Integer>> getLeaderboard(String objective, long start, long stop, boolean ascending) {
+		RedisAPI api = RedisAPI.getInstance();
+		final RedisFuture<List<ScoredValue<String>>> values;
+		if (ascending) {
+			values = api.async().zrangeWithScores(getRedisLeaderboardPath(objective), start, stop);
+		} else {
+			values = api.async().zrevrangeWithScores(getRedisLeaderboardPath(objective), start, stop);
+		}
+
+		return values.thenApply((scores) -> {
+			LinkedHashMap<String, Integer> map = new LinkedHashMap<String, Integer>();
+			for (ScoredValue<String> value : scores) {
+				map.put(value.getValue(), (int)value.getScore());
+			}
+
+			return (Map<String, Integer>)map;
+		}).toCompletableFuture();
+	}
+
+	/**
+	 * Updates the specified leaderboard with name/value.
+	 *
+	 * Update is dispatched asynchronously, this method does not block or return success/failure
+	 *
+	 * @param objective The leaderboard objective name (one leaderboard per objective)
+	 * @param name The name to associate with the value
+	 * @param value Leaderboard value
+	 */
+	public static void updateLeaderboardAsync(String objective, String name, long value) {
+		RedisAPI api = RedisAPI.getInstance();
+		api.async().zadd(getRedisLeaderboardPath(objective), (double)value, name);
+	}
+
+	public static String getRedisLeaderboardPath(String objective) {
+		return String.format("%s:leaderboard:%s", Conf.getDomain(), objective);
+	}
+}
