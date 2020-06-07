@@ -3,6 +3,8 @@ package com.playmonumenta.redissync.adapters;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import org.bukkit.Bukkit;
@@ -15,21 +17,31 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonReader;
+import com.mojang.datafixers.DataFixer;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.types.JsonOps;
 import com.playmonumenta.redissync.DataEventListener.ReturnParams;
 
+import net.minecraft.server.v1_15_R1.AdvancementDataPlayer;
+import net.minecraft.server.v1_15_R1.DataFixTypes;
 import net.minecraft.server.v1_15_R1.EntityPlayer;
+import net.minecraft.server.v1_15_R1.GameProfileSerializer;
 import net.minecraft.server.v1_15_R1.NBTCompressedStreamTools;
 import net.minecraft.server.v1_15_R1.NBTTagCompound;
 import net.minecraft.server.v1_15_R1.NBTTagDouble;
 import net.minecraft.server.v1_15_R1.NBTTagFloat;
 import net.minecraft.server.v1_15_R1.NBTTagList;
 import net.minecraft.server.v1_15_R1.PlayerList;
+import net.minecraft.server.v1_15_R1.SharedConstants;
 
 public class VersionAdapter115 implements VersionAdapter {
 	private Gson mGson = new Gson();
 	private Method mSaveMethod = null;
+	private static Gson advancementsGson = null;
 
-	public Object retrieveSaveData(Player player, byte[] data, String shardData) throws IOException {
+	public Object retrieveSaveData(byte[] data, String shardData) throws IOException {
 
 		ByteArrayInputStream inBytes = new ByteArrayInputStream(data);
 		NBTTagCompound nbt = NBTCompressedStreamTools.a(inBytes);
@@ -58,7 +70,7 @@ public class VersionAdapter115 implements VersionAdapter {
 		return nbt;
 	}
 
-	public SaveData extractSaveData(Player player, Object nbtObj, ReturnParams returnParams) throws IOException {
+	public SaveData extractSaveData(Object nbtObj, ReturnParams returnParams) throws IOException {
 		NBTTagCompound nbt = (NBTTagCompound) nbtObj;
 
 		JsonObject obj = new JsonObject();
@@ -106,6 +118,35 @@ public class VersionAdapter115 implements VersionAdapter {
 		}
 
 		mSaveMethod.invoke(playerList, ((CraftPlayer)player).getHandle());
+	}
+
+	public Object upgradePlayerData(Object nbtTagCompound) {
+		NBTTagCompound nbt = (NBTTagCompound) nbtTagCompound;
+		int i = nbt.hasKeyOfType("DataVersion", 3) ? nbt.getInt("DataVersion") : -1;
+		DataFixer dataFixer = ((CraftServer)Bukkit.getServer()).getHandle().getServer().dataConverterManager;
+		nbt = GameProfileSerializer.a(dataFixer, DataFixTypes.PLAYER, nbt, i);
+		nbt.setInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+		return nbt;
+	}
+
+	public String upgradePlayerAdvancements(String advancementsStr) throws Exception {
+		JsonReader jsonreader = new JsonReader(new StringReader(advancementsStr));
+		jsonreader.setLenient(false);
+		Dynamic<JsonElement> dynamic = new Dynamic<>(JsonOps.INSTANCE, Streams.parse(jsonreader));
+		DataFixer dataFixer = ((CraftServer)Bukkit.getServer()).getHandle().getServer().dataConverterManager;
+		dynamic = dataFixer.update(DataFixTypes.ADVANCEMENTS.a(), dynamic, dynamic.get("DataVersion").asInt(0), SharedConstants.getGameVersion().getWorldVersion());
+		dynamic = dynamic.remove("DataVersion");
+
+		if (advancementsGson == null) {
+			Field gsonField = AdvancementDataPlayer.class.getDeclaredField("b");
+			gsonField.setAccessible(true);
+			advancementsGson = (Gson)gsonField.get(null);
+		}
+
+		JsonElement element = dynamic.getValue();
+        element.getAsJsonObject().addProperty("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+
+		return advancementsGson.toJson(element);
 	}
 
 	protected NBTTagList toDoubleList(double... doubles) {

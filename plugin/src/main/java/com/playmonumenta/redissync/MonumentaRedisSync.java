@@ -13,6 +13,7 @@ import com.playmonumenta.redissync.commands.PlayerLoadFromPlayer;
 import com.playmonumenta.redissync.commands.PlayerRollback;
 import com.playmonumenta.redissync.commands.Stash;
 import com.playmonumenta.redissync.commands.TransferServer;
+import com.playmonumenta.redissync.commands.UpgradeAllPlayers;
 
 public class MonumentaRedisSync extends JavaPlugin {
 	private static MonumentaRedisSync INSTANCE = null;
@@ -33,6 +34,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		PlayerHistory.register(this);
 		PlayerRollback.register();
 		PlayerLoadFromPlayer.register();
+		UpgradeAllPlayers.register(this);
 	}
 
 	@Override
@@ -62,7 +64,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		return INSTANCE;
 	}
 
-	protected VersionAdapter getVersionAdapter() {
+	public VersionAdapter getVersionAdapter() {
 		return mVersionAdapter;
 	}
 

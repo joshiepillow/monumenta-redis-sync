@@ -25,9 +25,13 @@ public interface VersionAdapter {
 		}
 	}
 
-	Object retrieveSaveData(Player player, byte[] data, String shardData) throws IOException;
+	Object retrieveSaveData(byte[] data, String shardData) throws IOException;
 
-	SaveData extractSaveData(Player player, Object nbtObj, ReturnParams returnParams) throws IOException;
+	SaveData extractSaveData(Object nbtObj, ReturnParams returnParams) throws IOException;
 
 	void savePlayer(Player player) throws Exception;
+
+	Object upgradePlayerData(Object nbtTagCompound);
+
+	String upgradePlayerAdvancements(String advancementsStr) throws Exception;
 }

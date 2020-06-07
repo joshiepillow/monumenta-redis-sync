@@ -1,5 +1,6 @@
 package com.playmonumenta.redissync;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,9 +11,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
 
 import org.bukkit.Bukkit;
@@ -27,25 +31,90 @@ import io.github.jorelali.commandapi.api.exceptions.WrapperCommandSyntaxExceptio
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.ScoredValue;
+import io.lettuce.core.TransactionResult;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 
 public class MonumentaRedisSyncAPI {
+	public static class RedisPlayerData {
+		private final UUID mUUID;
+		private Object mNbtTagCompoundData;
+		private String mAdvancements;
+		private String mScores;
+		private String mHistory;
+
+		public RedisPlayerData(@Nonnull UUID uuid, @Nonnull Object nbtTagCompoundData, @Nonnull String advancements,
+		                       @Nonnull String scores, @Nonnull String history) {
+			mUUID = uuid;
+			mNbtTagCompoundData = nbtTagCompoundData;
+			mAdvancements = advancements;
+			mScores = scores;
+			mHistory = history;
+		}
+
+		@Nonnull
+		public UUID getUniqueId() {
+			return mUUID;
+		}
+
+		@Nonnull
+		public Object getNbtTagCompoundData() {
+			return mNbtTagCompoundData;
+		}
+
+		@Nonnull
+		public String getAdvancements() {
+			return mAdvancements;
+		}
+
+		@Nonnull
+		public String getScores() {
+			return mScores;
+		}
+
+		@Nonnull
+		public String getHistory() {
+			return mHistory;
+		}
+
+		@Nonnull
+		public UUID getmUUID() {
+			return mUUID;
+		}
+
+		public void setNbtTagCompoundData(@Nonnull Object nbtTagCompoundData) {
+			this.mNbtTagCompoundData = nbtTagCompoundData;
+		}
+
+		public void setAdvancements(@Nonnull String advancements) {
+			this.mAdvancements = advancements;
+		}
+
+		public void setScores(@Nonnull String scores) {
+			this.mScores = scores;
+		}
+
+		public void setHistory(@Nonnull String history) {
+			this.mHistory = history;
+		}
+	}
+
 	public static final int TIMEOUT_SECONDS = 10;
 
 	public static CompletableFuture<String> uuidToName(UUID uuid) {
-		return RedisAPI.getInstance().async().hget(BungeeListener.uuidToNamePath, uuid.toString()).toCompletableFuture();
+		return RedisAPI.getInstance().async().hget("uuid2name", uuid.toString()).toCompletableFuture();
 	}
 
 	public static CompletableFuture<UUID> nameToUUID(String name) {
-		return RedisAPI.getInstance().async().hget(BungeeListener.nameToUUIDPath, name).thenApply((uuid) -> UUID.fromString(uuid)).toCompletableFuture();
+		return RedisAPI.getInstance().async().hget("name2uuid", name).thenApply((uuid) -> UUID.fromString(uuid)).toCompletableFuture();
 	}
 
 	public static CompletableFuture<Set<String>> getAllPlayerNames() {
-		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall(BungeeListener.nameToUUIDPath);
+		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall("name2uuid");
 		return future.thenApply((data) -> data.keySet()).toCompletableFuture();
 	}
 
 	public static CompletableFuture<Set<UUID>> getAllPlayerUUIDs() {
-		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall(BungeeListener.nameToUUIDPath);
+		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall("uuid2name");
 		return future.thenApply((data) -> data.keySet().stream().map((uuid) -> UUID.fromString(uuid)).collect(Collectors.toSet())).toCompletableFuture();
 	}
 
@@ -383,30 +452,62 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
-	public static String getRedisDataPath(Player player) {
-		return String.format("%s:playerdata:%s:data", Conf.getDomain(), player.getUniqueId().toString());
+	@Nonnull
+	public static String getRedisDataPath(@Nonnull Player player) {
+		return getRedisDataPath(player.getUniqueId());
 	}
 
-	public static String getRedisHistoryPath(Player player) {
-		return String.format("%s:playerdata:%s:history", Conf.getDomain(), player.getUniqueId().toString());
+	@Nonnull
+	public static String getRedisDataPath(@Nonnull UUID uuid) {
+		return String.format("%s:playerdata:%s:data", Conf.getDomain(), uuid.toString());
 	}
 
-	public static String getRedisPerShardDataPath(Player player) {
-		return String.format("%s:playerdata:%s:sharddata", Conf.getDomain(), player.getUniqueId().toString());
+	@Nonnull
+	public static String getRedisHistoryPath(@Nonnull Player player) {
+		return getRedisHistoryPath(player.getUniqueId());
 	}
 
-	public static String getRedisAdvancementsPath(Player player) {
-		return String.format("%s:playerdata:%s:advancements", Conf.getDomain(), player.getUniqueId().toString());
+	@Nonnull
+	public static String getRedisHistoryPath(@Nonnull UUID uuid) {
+		return String.format("%s:playerdata:%s:history", Conf.getDomain(), uuid.toString());
 	}
 
-	public static String getRedisScoresPath(Player player) {
-		return String.format("%s:playerdata:%s:scores", Conf.getDomain(), player.getUniqueId().toString());
+	@Nonnull
+	public static String getRedisPerShardDataPath(@Nonnull Player player) {
+		return getRedisPerShardDataPath(player.getUniqueId());
 	}
 
+	@Nonnull
+	public static String getRedisPerShardDataPath(@Nonnull UUID uuid) {
+		return String.format("%s:playerdata:%s:sharddata", Conf.getDomain(), uuid.toString());
+	}
+
+	@Nonnull
+	public static String getRedisAdvancementsPath(@Nonnull Player player) {
+		return getRedisAdvancementsPath(player.getUniqueId());
+	}
+
+	@Nonnull
+	public static String getRedisAdvancementsPath(@Nonnull UUID uuid) {
+		return String.format("%s:playerdata:%s:advancements", Conf.getDomain(), uuid.toString());
+	}
+
+	@Nonnull
+	public static String getRedisScoresPath(@Nonnull Player player) {
+		return getRedisScoresPath(player.getUniqueId());
+	}
+
+	@Nonnull
+	public static String getRedisScoresPath(@Nonnull UUID uuid) {
+		return String.format("%s:playerdata:%s:scores", Conf.getDomain(), uuid.toString());
+	}
+
+	@Nonnull
 	public static String getStashPath() {
 		return String.format("%s:stash", Conf.getDomain());
 	}
 
+	@Nonnull
 	public static String getStashListPath() {
 		return String.format("%s:stashlist", Conf.getDomain());
 	}
@@ -514,7 +615,83 @@ public class MonumentaRedisSyncAPI {
 		api.async().zadd(getRedisLeaderboardPath(objective), (double)value, name);
 	}
 
+	@Nonnull
 	public static String getRedisLeaderboardPath(String objective) {
 		return String.format("%s:leaderboard:%s", Conf.getDomain(), objective);
+	}
+
+	/** Future returns non-null if successfully loaded data, null on error */
+	@Nullable
+	private static RedisPlayerData transformPlayerData(@Nonnull MonumentaRedisSync mrs, @Nonnull UUID uuid, @Nonnull TransactionResult result) {
+		if (result.isEmpty() || result.size() != 4 || result.get(0) == null
+		    || result.get(1) == null || result.get(2) == null || result.get(3) == null) {
+			mrs.getLogger().severe("Failed to retrieve player data");
+			return null;
+		}
+
+		try {
+			byte[] data = result.get(0);
+			String advancements = new String(result.get(1), StandardCharsets.UTF_8);
+			String scores = new String(result.get(2), StandardCharsets.UTF_8);
+			String history = new String(result.get(3), StandardCharsets.UTF_8);
+
+			return new RedisPlayerData(uuid, mrs.getVersionAdapter().retrieveSaveData(data, null), advancements, scores, history);
+		} catch (Exception e) {
+			mrs.getLogger().severe("Failed to parse player data: " + e.getMessage());
+			return null;
+		}
+	}
+
+	@Nonnull
+	public static CompletableFuture<RedisPlayerData> getOfflinePlayerData(@Nonnull UUID uuid) throws Exception {
+		if (Bukkit.getPlayer(uuid) != null) {
+			throw new Exception("Player " + uuid.toString() + " is online");
+		}
+
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			throw new Exception("MonumentaRedisSync invoked but is not loaded");
+		}
+
+		RedisAsyncCommands<String,byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
+		commands.multi();
+
+		commands.lindex(MonumentaRedisSyncAPI.getRedisDataPath(uuid), 0);
+		commands.lindex(MonumentaRedisSyncAPI.getRedisAdvancementsPath(uuid), 0);
+		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid), 0);
+		commands.lindex(MonumentaRedisSyncAPI.getRedisHistoryPath(uuid), 0);
+
+		return commands.exec().thenApply((TransactionResult result) -> transformPlayerData(mrs, uuid, result)).toCompletableFuture();
+	}
+
+	@Nonnull
+	private static Boolean transformPlayerSaveResult(@Nonnull MonumentaRedisSync mrs, @Nonnull TransactionResult result) {
+		if (result.isEmpty() || result.size() != 4 || result.get(0) == null
+		    || result.get(1) == null || result.get(2) == null || result.get(3) == null) {
+			mrs.getLogger().severe("Failed to commit player data");
+			return false;
+		}
+
+		return true;
+	}
+
+	/** Future returns true if successfully committed, false if not */
+	@Nonnull
+	public static CompletableFuture<Boolean> saveOfflinePlayerData(@Nonnull RedisPlayerData data) throws Exception {
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			throw new Exception("MonumentaRedisSync invoked but is not loaded");
+		}
+
+		RedisAsyncCommands<String,byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
+		commands.multi();
+
+		SaveData splitData = mrs.getVersionAdapter().extractSaveData(data.getNbtTagCompoundData(), null);
+		commands.lpush(MonumentaRedisSyncAPI.getRedisDataPath(data.getUniqueId()), splitData.getData());
+		commands.lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(data.getUniqueId()), data.getAdvancements().getBytes(StandardCharsets.UTF_8));
+		commands.lpush(MonumentaRedisSyncAPI.getRedisScoresPath(data.getUniqueId()), data.getScores().getBytes(StandardCharsets.UTF_8));
+		commands.lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(data.getUniqueId()), data.getHistory().getBytes(StandardCharsets.UTF_8));
+
+		return commands.exec().thenApply((TransactionResult result) -> transformPlayerSaveResult(mrs, result)).toCompletableFuture();
 	}
 }

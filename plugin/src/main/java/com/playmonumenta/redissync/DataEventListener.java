@@ -321,7 +321,7 @@ public class DataEventListener implements Listener {
 		}
 
 		try {
-			Object nbtTagCompound = mAdapter.retrieveSaveData(player, data, shardData);
+			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardData);
 			event.setData(nbtTagCompound);
 		} catch (IOException ex) {
 			mLogger.severe("Failed to load player data: " + ex.toString());
@@ -357,7 +357,7 @@ public class DataEventListener implements Listener {
 		try {
 			/* Grab the return parameters if they were set when starting transfer. If they are null, that's fine too */
 			ReturnParams returnParams = mReturnParams.get(player.getUniqueId());
-			SaveData data = mAdapter.extractSaveData(player, event.getData(), returnParams);
+			SaveData data = mAdapter.extractSaveData(event.getData(), returnParams);
 
 			mLogger.finer("data: " + b64encode(data.getData()));
 			mLogger.finer("sharddata: " + data.getShardData());
