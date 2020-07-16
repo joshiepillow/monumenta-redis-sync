@@ -32,13 +32,13 @@ public class TransferServer {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
-											  for (Player player : (Collection<Player>)args[0]) {
-												  try {
-													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1]);
-												  } catch (Exception ex) {
-													  CommandAPI.fail(ex.getMessage());
-												  }
-											  }
+		                                      for (Player player : (Collection<Player>)args[0]) {
+		                                          try {
+		                                              MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1]);
+		                                          } catch (Exception ex) {
+		                                              CommandAPI.fail(ex.getMessage());
+		                                          }
+		                                      }
 		                                  }
 		);
 
@@ -47,13 +47,13 @@ public class TransferServer {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
-											  for (Player player : (Collection<Player>)args[0]) {
-												  try {
-													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2]);
-												  } catch (Exception ex) {
-													  CommandAPI.fail(ex.getMessage());
-												  }
-											  }
+		                                      for (Player player : (Collection<Player>)args[0]) {
+		                                          try {
+		                                              MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2]);
+		                                          } catch (Exception ex) {
+		                                              CommandAPI.fail(ex.getMessage());
+		                                          }
+		                                      }
 		                                  }
 		);
 
@@ -63,13 +63,32 @@ public class TransferServer {
 		                                  perms,
 		                                  arguments,
 		                                  (sender, args) -> {
-											  for (Player player : (Collection<Player>)args[0]) {
-												  try {
-													  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2], (Float)args[3], (Float)args[4]);
-												  } catch (Exception ex) {
-													  CommandAPI.fail(ex.getMessage());
-												  }
-											  }
+		                                      for (Player player : (Collection<Player>)args[0]) {
+		                                          try {
+		                                              MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2], (Float)args[3], (Float)args[4]);
+		                                          } catch (Exception ex) {
+		                                              CommandAPI.fail(ex.getMessage());
+		                                          }
+		                                      }
+		                                  }
+		);
+
+		/* Single player alias */
+		arguments = new LinkedHashMap<>();
+		arguments.put("server", new StringArgument());
+		CommandAPI.getInstance().register("s",
+		                                  perms,
+		                                  arguments,
+		                                  (sender, args) -> {
+		                                      if (sender instanceof Player) {
+		                                          try {
+		                                              MonumentaRedisSyncAPI.sendPlayer(plugin, (Player)sender, (String)args[0]);
+		                                          } catch (Exception ex) {
+		                                              CommandAPI.fail(ex.getMessage());
+		                                          }
+		                                      } else {
+		                                          CommandAPI.fail("This command can only be run by players");
+		                                      }
 		                                  }
 		);
 	}
