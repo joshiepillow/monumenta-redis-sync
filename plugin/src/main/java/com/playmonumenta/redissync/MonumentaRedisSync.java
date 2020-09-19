@@ -7,7 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.playmonumenta.redissync.adapters.VersionAdapter;
-import com.playmonumenta.redissync.adapters.VersionAdapter115;
+import com.playmonumenta.redissync.adapters.VersionAdapter_v1_15_R1;
 import com.playmonumenta.redissync.commands.PlayerHistory;
 import com.playmonumenta.redissync.commands.PlayerLoadFromPlayer;
 import com.playmonumenta.redissync.commands.PlayerRollback;
@@ -20,9 +20,29 @@ public class MonumentaRedisSync extends JavaPlugin {
 	private RedisAPI mRedisAPI = null;
 	private VersionAdapter mVersionAdapter = null;
 
+    private void loadVersionAdapter() {
+        /* From https://github.com/mbax/AbstractionExamplePlugin */
+
+        String packageName = this.getServer().getClass().getPackage().getName();
+        String version = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+        try {
+            final Class<?> clazz = Class.forName("com.playmonumenta.redissync.adapters.VersionAdapter_" + version);
+            // Check if we have a valid adapter class at that location.
+            if (VersionAdapter.class.isAssignableFrom(clazz)) {
+                mVersionAdapter = (VersionAdapter) clazz.getConstructor().newInstance();
+            }
+        } catch (final Exception e) {
+            e.printStackTrace();
+            getLogger().severe("Server version " + version + " is not supported!");
+            return;
+        }
+        getLogger().info("Loading support for " + version);
+    }
+
 	@Override
 	public void onLoad() {
-		mVersionAdapter = new VersionAdapter115();
+        loadVersionAdapter();
 
 		/*
 		 * CommandAPI commands which register directly and are usable in functions
@@ -39,6 +59,11 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+        /* Refuse to enable without a version adapter */
+        if (mVersionAdapter == null) {
+            this.setEnabled(false);
+        }
+
 		/* Needed to tell Netty where it moved to */
 		System.setProperty("com.playmonumenta.redissync.internal.io.netty", "com.playmonumenta.redissync.internal");
 

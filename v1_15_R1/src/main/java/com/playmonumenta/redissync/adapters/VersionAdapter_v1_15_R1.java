@@ -22,7 +22,6 @@ import com.google.gson.stream.JsonReader;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.types.JsonOps;
-import com.playmonumenta.redissync.DataEventListener.ReturnParams;
 
 import net.minecraft.server.v1_15_R1.AdvancementDataPlayer;
 import net.minecraft.server.v1_15_R1.DataFixTypes;
@@ -36,7 +35,7 @@ import net.minecraft.server.v1_15_R1.NBTTagList;
 import net.minecraft.server.v1_15_R1.PlayerList;
 import net.minecraft.server.v1_15_R1.SharedConstants;
 
-public class VersionAdapter115 implements VersionAdapter {
+public class VersionAdapter_v1_15_R1 implements VersionAdapter {
 	private Gson mGson = new Gson();
 	private Method mSaveMethod = null;
 	private static Gson advancementsGson = null;
@@ -70,7 +69,7 @@ public class VersionAdapter115 implements VersionAdapter {
 		return nbt;
 	}
 
-	public SaveData extractSaveData(Object nbtObj, ReturnParams returnParams) throws IOException {
+	public SaveData extractSaveData(Object nbtObj, VersionAdapter.ReturnParams returnParams) throws IOException {
 		NBTTagCompound nbt = (NBTTagCompound) nbtObj;
 
 		JsonObject obj = new JsonObject();

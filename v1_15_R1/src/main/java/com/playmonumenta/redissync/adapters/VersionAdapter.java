@@ -2,12 +2,23 @@ package com.playmonumenta.redissync.adapters;
 
 import java.io.IOException;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-import com.playmonumenta.redissync.DataEventListener.ReturnParams;
-
 public interface VersionAdapter {
-	class SaveData {
+	public static class ReturnParams {
+		public final Location mReturnLoc;
+		public final Float mReturnYaw;
+		public final Float mReturnPitch;
+
+		private ReturnParams(Location returnLoc, Float returnYaw, Float returnPitch) {
+			mReturnLoc = returnLoc;
+			mReturnYaw = returnYaw;
+			mReturnPitch = returnPitch;
+		}
+	}
+
+	public static class SaveData {
 		private final byte[] mData;
 		private final String mShardData;
 

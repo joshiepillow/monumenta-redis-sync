@@ -60,6 +60,7 @@ import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter;
+import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
@@ -67,18 +68,6 @@ import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 
 public class DataEventListener implements Listener {
-	public static class ReturnParams {
-		public final Location mReturnLoc;
-		public final Float mReturnYaw;
-		public final Float mReturnPitch;
-
-		private ReturnParams(Location returnLoc, Float returnYaw, Float returnPitch) {
-			mReturnLoc = returnLoc;
-			mReturnYaw = returnYaw;
-			mReturnPitch = returnPitch;
-		}
-	}
-
 	private static final String TRANSFER_UNLOCK_TASK_METAKEY = "RedisSyncTransferUnlockMetakey";
 	private static final int TRANSFER_UNLOCK_TIMEOUT_TICKS = 10 * 20;
 	private static DataEventListener INSTANCE = null;

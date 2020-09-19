@@ -4,18 +4,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <artifactId>parent</artifactId>
+        <groupId>com.playmonumenta.redissync</groupId>
+        <version>dev</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
     <groupId>com.playmonumenta</groupId>
     <artifactId>redissync</artifactId>
-    <version>dev</version>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.build.timestamp.format>yyyyMMdd-HHmmss</maven.build.timestamp.format>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <minecraft.server.version>1.15.2-R0.1-SNAPSHOT</minecraft.server.version>
-    </properties>
+    <packaging>jar</packaging>
 
     <distributionManagement>
         <repository>
@@ -37,6 +35,23 @@
     </repositories>
 
     <dependencies>
+        <!-- Internal dependencies that need shading -->
+        <dependency>
+            <groupId>com.playmonumenta.redissync</groupId>
+            <artifactId>adapterapi</artifactId>
+            <version>dev</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.playmonumenta.redissync</groupId>
+            <artifactId>v1_15_R1</artifactId>
+            <version>dev</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- External dependencies -->
         <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
@@ -54,7 +69,7 @@
         <dependency>
             <groupId>com.destroystokyo.paper</groupId>
             <artifactId>paper</artifactId>
-            <version>${minecraft.server.version}</version>
+            <version>${min.minecraft.server.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -72,7 +87,7 @@
     </dependencies>
 
     <build>
-        <finalName>MonumentaRedisSync_1.15.2_${project.version}_${maven.build.timestamp}</finalName>
+        <finalName>MonumentaRedisSync_${project.version}_${maven.build.timestamp}</finalName>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -110,7 +125,7 @@
                     <targetJdk>1.8</targetJdk>
                     <format>txt</format>
                     <rulesets>
-                        <ruleset>${basedir}/pmd-ruleset.xml</ruleset>
+                        <ruleset>${basedir}/../pmd-ruleset.xml</ruleset>
                     </rulesets>
                 </configuration>
             </plugin>
@@ -151,7 +166,7 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <configLocation>${basedir}/checkstyle.xml</configLocation>
+                    <configLocation>${basedir}/../checkstyle.xml</configLocation>
                 </configuration>
             </plugin>
             <plugin>
