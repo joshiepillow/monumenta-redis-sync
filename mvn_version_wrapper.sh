@@ -10,7 +10,7 @@ cp "$SCRIPT_DIR/plugin/src/main/resources/plugin.yml" "$SCRIPT_DIR/plugin/src/ma
 perl -p -i -e "s|^version: .*$|version: $VERSION|g" "$SCRIPT_DIR/plugin/src/main/resources/plugin.yml"
 
 # Back up pom files and update their version numbers
-for pom in $(find . -name 'pom.xml'); do
+for pom in $(find . -name '*pom.xml'); do
 	cp "$pom" "${pom}.compilebackup"
 	perl -p -i -e "s|<version>dev</version>|<version>$VERSION</version>|g" "$pom"
 done
@@ -18,8 +18,14 @@ done
 mvn "$@"
 retcode=$?
 
+if [[ $retcode -eq 0 ]]; then
+	pushd plugin
+	mvn -f api_pom.xml "$@"
+	popd
+fi
+
 # Move backup pom files back over top of originals
-for pom in $(find . -name 'pom.xml'); do
+for pom in $(find . -name '*pom.xml'); do
 	mv -f "${pom}.compilebackup" "$pom"
 done
 
