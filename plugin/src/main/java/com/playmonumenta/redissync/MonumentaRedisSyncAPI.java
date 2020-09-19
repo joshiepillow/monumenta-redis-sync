@@ -483,6 +483,16 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	@Nonnull
+	public static String getRedisPluginDataPath(@Nonnull Player player) {
+		return getRedisPluginDataPath(player.getUniqueId());
+	}
+
+	@Nonnull
+	public static String getRedisPluginDataPath(@Nonnull UUID uuid) {
+		return String.format("%s:playerdata:%s:plugindata", Conf.getDomain(), uuid.toString());
+	}
+
+	@Nonnull
 	public static String getRedisAdvancementsPath(@Nonnull Player player) {
 		return getRedisAdvancementsPath(player.getUniqueId());
 	}
@@ -572,6 +582,18 @@ public class MonumentaRedisSyncAPI {
 			ex.printStackTrace();
 			CommandAPI.fail(message);
 		}
+	}
+
+	@Nonnull
+	public static CompletableFuture<Boolean> savePlayerPluginData(@Nonnull UUID uuid, @Nonnull String pluginIdentifier, @Nonnull String data) {
+		RedisAPI api = RedisAPI.getInstance();
+		return api.async().hset(getRedisPluginDataPath(uuid), pluginIdentifier, data).toCompletableFuture();
+	}
+
+	@Nonnull
+	public static CompletableFuture<String> loadPlayerPluginData(@Nonnull UUID uuid, @Nonnull String pluginIdentifier) {
+		RedisAPI api = RedisAPI.getInstance();
+		return api.async().hget(getRedisPluginDataPath(uuid), pluginIdentifier).toCompletableFuture();
 	}
 
 	/**
