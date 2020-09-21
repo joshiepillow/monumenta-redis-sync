@@ -15,7 +15,7 @@ for pom in $(find . -name '*pom.xml'); do
 	perl -p -i -e "s|<version>dev</version>|<version>$VERSION</version>|g" "$pom"
 done
 
-mvn "$@"
+mvn clean "$@"
 retcode=$?
 
 if [[ $retcode -eq 0 ]]; then
