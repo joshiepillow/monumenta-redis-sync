@@ -15,12 +15,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class ScoreboardUtils {
-	/* TODO: Move to config file */
-	public static final String[] NOT_TRANSFERRED_OBJECTIVES_VALS =
-	    new String[] {"Apartment", "AptIdle", "VotesWeekly", "VotesTotal", "VotesSinceWin", "VoteRewards", "VoteRaffle", "VoteCache", "KaulSpleefWins", "SnowmanKills"};
-	public static final Set<String> NOT_TRANSFERRED_OBJECTIVES =
-	    new HashSet<>(Arrays.asList(NOT_TRANSFERRED_OBJECTIVES_VALS));
-
 	public static JsonObject getAsJsonObject(Player player) {
 		JsonObject data = new JsonObject();
 
@@ -39,17 +33,15 @@ public class ScoreboardUtils {
 
 		for (Map.Entry<String, JsonElement> entry : data.entrySet()) {
 			String name = entry.getKey();
-			if (!NOT_TRANSFERRED_OBJECTIVES.contains(name)) {
-				int scoreVal = entry.getValue().getAsInt();
+			int scoreVal = entry.getValue().getAsInt();
 
-				Objective objective = scoreboard.getObjective(name);
-				if (objective == null) {
-					objective = scoreboard.registerNewObjective(name, "dummy", name);
-				}
-
-				Score score = objective.getScore(player.getName());
-				score.setScore(scoreVal);
+			Objective objective = scoreboard.getObjective(name);
+			if (objective == null) {
+				objective = scoreboard.registerNewObjective(name, "dummy", name);
 			}
+
+			Score score = objective.getScore(player.getName());
+			score.setScore(scoreVal);
 		}
 	}
 }
