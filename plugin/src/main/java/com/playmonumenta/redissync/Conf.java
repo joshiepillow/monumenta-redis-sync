@@ -9,6 +9,7 @@ public class Conf {
 	private final String mShard;
 	private final int mHistory;
 	private final boolean mSavingDisabled;
+	private final boolean mScoreboardCleanupEnabled;
 
 	protected static String getHost() {
 		return INSTANCE.mHost;
@@ -34,6 +35,10 @@ public class Conf {
 		return INSTANCE.mSavingDisabled;
 	}
 
+	protected static boolean getScoreboardCleanupEnabled() {
+		return INSTANCE.mScoreboardCleanupEnabled;
+	}
+
 	protected Conf(String host, int port, String shard) {
 		mHost = host;
 		mPort = port;
@@ -41,16 +46,18 @@ public class Conf {
 		mShard = shard;
 		mHistory = -1;
 		mSavingDisabled = false;
+		mScoreboardCleanupEnabled = true;
 		INSTANCE = this;
 	}
 
-	protected Conf(String host, int port, String domain, String shard, int history, boolean savingDisabled) {
+	protected Conf(String host, int port, String domain, String shard, int history, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;
 		mShard = shard;
 		mHistory = history;
 		mSavingDisabled = savingDisabled;
+		mScoreboardCleanupEnabled = scoreboardCleanupEnabled;
 		INSTANCE = this;
 	}
 }

@@ -1,6 +1,7 @@
 package com.playmonumenta.redissync;
 
 import java.io.File;
+import java.util.logging.Logger;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -29,7 +30,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 			final Class<?> clazz = Class.forName("com.playmonumenta.redissync.adapters.VersionAdapter_" + version);
 			// Check if we have a valid adapter class at that location.
 			if (VersionAdapter.class.isAssignableFrom(clazz)) {
-				mVersionAdapter = (VersionAdapter) clazz.getConstructor().newInstance();
+				mVersionAdapter = (VersionAdapter) clazz.getConstructor(Logger.class).newInstance(this.getLogger());
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
@@ -71,6 +72,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
 		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
+		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getLogger(), mVersionAdapter), this);
 
 		this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 	}
@@ -103,6 +105,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		String shard = config.getString("shard_name", "default_shard");
 		int history = config.getInt("history_amount", 20);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
-		new Conf(host, port, domain, shard, history, savingDisabled);
+		boolean scoreboardCleanupEnabled = config.getBoolean("scoreboard_cleanup_enabled", true);
+		new Conf(host, port, domain, shard, history, savingDisabled, scoreboardCleanupEnabled);
 	}
 }

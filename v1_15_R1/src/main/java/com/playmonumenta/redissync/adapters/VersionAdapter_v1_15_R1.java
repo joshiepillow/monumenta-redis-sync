@@ -6,12 +6,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_15_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
-import org.bukkit.entity.Player;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -23,6 +19,15 @@ import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.types.JsonOps;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.craftbukkit.v1_15_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_15_R1.scoreboard.CraftScoreboard;
+import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
+
 import net.minecraft.server.v1_15_R1.AdvancementDataPlayer;
 import net.minecraft.server.v1_15_R1.DataFixTypes;
 import net.minecraft.server.v1_15_R1.EntityPlayer;
@@ -33,12 +38,56 @@ import net.minecraft.server.v1_15_R1.NBTTagDouble;
 import net.minecraft.server.v1_15_R1.NBTTagFloat;
 import net.minecraft.server.v1_15_R1.NBTTagList;
 import net.minecraft.server.v1_15_R1.PlayerList;
+import net.minecraft.server.v1_15_R1.Scoreboard;
+import net.minecraft.server.v1_15_R1.ScoreboardObjective;
+import net.minecraft.server.v1_15_R1.ScoreboardScore;
 import net.minecraft.server.v1_15_R1.SharedConstants;
 
 public class VersionAdapter_v1_15_R1 implements VersionAdapter {
+	private static Gson advancementsGson = null;
+
 	private Gson mGson = new Gson();
 	private Method mSaveMethod = null;
-	private static Gson advancementsGson = null;
+	private final Logger mLogger;
+
+	public VersionAdapter_v1_15_R1(Logger logger) {
+		mLogger = logger;
+	}
+
+	@SuppressWarnings("unchecked")
+	public JsonObject getPlayerScoresAsJson(String playerName, org.bukkit.scoreboard.Scoreboard scoreboard) {
+		Scoreboard nmsScoreboard = ((CraftScoreboard)scoreboard).getHandle();
+
+		JsonObject data = new JsonObject();
+		Map<String, Map<ScoreboardObjective, ScoreboardScore>> playerScores = null;
+
+		try {
+			Field playerScoresField = Scoreboard.class.getDeclaredField("playerScores");
+			playerScoresField.setAccessible(true);
+			playerScores = (Map<String, Map<ScoreboardObjective, ScoreboardScore>>)playerScoresField.get(nmsScoreboard);
+		} catch (NoSuchFieldException | IllegalAccessException ex) {
+			mLogger.severe("Failed to access playerScores scoreboard field: " + ex.getMessage());
+			ex.printStackTrace();
+			return data;
+		}
+
+		Map<ScoreboardObjective, ScoreboardScore> scores = playerScores.get(playerName);
+		if (scores == null) {
+			// No scores for this player
+			return data;
+		}
+
+		for (Map.Entry<ScoreboardObjective, ScoreboardScore> entry : scores.entrySet()) {
+			data.addProperty(entry.getKey().getName(), entry.getValue().getScore());
+		}
+
+		return data;
+	}
+
+	public void resetPlayerScores(String playerName, org.bukkit.scoreboard.Scoreboard scoreboard) {
+		Scoreboard nmsScoreboard = ((CraftScoreboard)scoreboard).getHandle();
+		nmsScoreboard.resetPlayerScores(playerName, null);
+	}
 
 	public Object retrieveSaveData(byte[] data, String shardData) throws IOException {
 

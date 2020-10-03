@@ -265,7 +265,7 @@ public class DataEventListener implements Listener {
 		/* TODO: Decrease verbosity */
 		mLogger.info("Saving scoreboard data for player=" + player.getName());
 		long startTime = System.currentTimeMillis();
-		String data = ScoreboardUtils.getAsJsonObject(player).toString();
+		String data = mGson.toJson(mAdapter.getPlayerScoresAsJson(player.getName(), Bukkit.getScoreboardManager().getMainScoreboard()));
 		/* TODO: Decrease verbosity */
 		mLogger.info("Scoreboard saving took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 		mLogger.finer("Data:" + data);

@@ -1,9 +1,9 @@
 package com.playmonumenta.redissync.utils;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -11,10 +11,9 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
 public class ScoreboardUtils {
+	@Deprecated
+	/* Use the method in the VersionAdapter instead */
 	public static JsonObject getAsJsonObject(Player player) {
 		JsonObject data = new JsonObject();
 

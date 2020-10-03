@@ -2,8 +2,11 @@ package com.playmonumenta.redissync.adapters;
 
 import java.io.IOException;
 
+import com.google.gson.JsonObject;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
 
 public interface VersionAdapter {
 	public static class ReturnParams {
@@ -35,6 +38,10 @@ public interface VersionAdapter {
 			return mShardData;
 		}
 	}
+
+	JsonObject getPlayerScoresAsJson(String playerName, Scoreboard scoreboard);
+
+	void resetPlayerScores(String playerName, Scoreboard scoreboard);
 
 	Object retrieveSaveData(byte[] data, String shardData) throws IOException;
 
