@@ -98,7 +98,6 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 			nbt.set("Pos", toDoubleList(spawn.getX(), spawn.getY(), spawn.getZ()));
 		} else {
 			JsonObject obj = mGson.fromJson(shardData, JsonObject.class);
-			applyDoubleList(obj, nbt, "Pos");
 			applyInt(obj, nbt, "SpawnX");
 			applyInt(obj, nbt, "SpawnY");
 			applyInt(obj, nbt, "SpawnZ");
@@ -109,9 +108,14 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 			applyFloat(obj, nbt, "FallDistance");
 			applyBool(obj, nbt, "OnGround");
 			applyInt(obj, nbt, "Dimension");
+			applyStr(obj, nbt, "world");
+			applyLong(obj, nbt, "WorldUUIDMost");
+			applyLong(obj, nbt, "WorldUUIDLeast");
 			applyDoubleList(obj, nbt, "Pos");
 			applyDoubleList(obj, nbt, "Motion");
 			applyFloatList(obj, nbt, "Rotation");
+			applyDoubleList(obj, nbt, "Paper.Origin");
+			applyCompoundOfDoubles(obj, nbt, "enteredNetherPosition");
 		}
 
 		return nbt;
@@ -131,9 +135,14 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 		copyFloat(obj, nbt, "FallDistance");
 		copyBool(obj, nbt, "OnGround");
 		copyInt(obj, nbt, "Dimension");
+		copyStr(obj, nbt, "world");
+		copyLong(obj, nbt, "WorldUUIDMost");
+		copyLong(obj, nbt, "WorldUUIDLeast");
 		copyDoubleList(obj, nbt, "Pos");
 		copyDoubleList(obj, nbt, "Motion");
 		copyFloatList(obj, nbt, "Rotation");
+		copyDoubleList(obj, nbt, "Paper.Origin");
+		copyCompoundOfDoubles(obj, nbt, "enteredNetherPosition");
 
 		if (returnParams != null && returnParams.mReturnLoc != null) {
 			JsonArray arr = new JsonArray();
@@ -224,6 +233,12 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 		}
 	}
 
+	private void applyLong(JsonObject obj, NBTTagCompound nbt, String key) {
+		if (obj.has(key)) {
+			nbt.setLong(key, obj.get(key).getAsLong());
+		}
+	}
+
 	private void applyFloat(JsonObject obj, NBTTagCompound nbt, String key) {
 		if (obj.has(key)) {
 			nbt.setFloat(key, obj.get(key).getAsFloat());
@@ -262,6 +277,19 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 		}
 	}
 
+	private void applyCompoundOfDoubles(JsonObject obj, NBTTagCompound nbt, String key) {
+		if (obj.has(key)) {
+			JsonElement element = obj.get(key);
+			if (element.isJsonObject()) {
+				NBTTagCompound nbtcomp = new NBTTagCompound();
+				for (Map.Entry<String, JsonElement> subentry : element.getAsJsonObject().entrySet()) {
+					nbtcomp.setDouble(subentry.getKey(), subentry.getValue().getAsDouble());
+				}
+				nbt.set(key, nbtcomp);
+			}
+		}
+	}
+
 	private void copyStr(JsonObject obj, NBTTagCompound nbt, String key) {
 		if (nbt.hasKey(key)) {
 			obj.addProperty(key, nbt.getString(key));
@@ -272,6 +300,13 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 	private void copyInt(JsonObject obj, NBTTagCompound nbt, String key) {
 		if (nbt.hasKey(key)) {
 			obj.addProperty(key, nbt.getInt(key));
+			nbt.remove(key);
+		}
+	}
+
+	private void copyLong(JsonObject obj, NBTTagCompound nbt, String key) {
+		if (nbt.hasKey(key)) {
+			obj.addProperty(key, nbt.getLong(key));
 			nbt.remove(key);
 		}
 	}
@@ -310,6 +345,18 @@ public class VersionAdapter_v1_16_R2 implements VersionAdapter {
 				arr.add(list.h(i));
 			}
 			obj.add(key, arr);
+			nbt.remove(key);
+		}
+	}
+
+	private void copyCompoundOfDoubles(JsonObject obj, NBTTagCompound nbt, String key) {
+		if (nbt.hasKey(key)) {
+			NBTTagCompound compound = nbt.getCompound(key);
+			JsonObject sobj = new JsonObject();
+			for (String comp : compound.getKeys()) {
+				sobj.addProperty(comp, compound.getDouble(comp));
+			}
+			obj.add(key, sobj);
 			nbt.remove(key);
 		}
 	}
