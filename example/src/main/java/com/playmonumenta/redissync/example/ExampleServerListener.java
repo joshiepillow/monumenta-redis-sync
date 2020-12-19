@@ -3,13 +3,13 @@ package com.playmonumenta.redissync.example;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
+import com.playmonumenta.redissync.event.PlayerSaveEvent;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,7 +17,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class ExampleServerListener implements Listener {
 	/*################################################################################
@@ -27,12 +26,6 @@ public class ExampleServerListener implements Listener {
 
 	/* Change this to something that uniquely identifies the data you want to save for this plugin */
 	private static final String IDENTIFIER = "ExampleRedisDataPlugin";
-
-	/*
-	 * This is useful to save data periodically, not only when players leave
-	 * Set to 0 to disable
-	 */
-	private static final int SAVE_PERIOD = 20 * 60 * 6; // 6 minutes
 
 	/* You probably want to change the name of this data class, or make your own */
 	public static class CustomData {
@@ -53,10 +46,9 @@ public class ExampleServerListener implements Listener {
 		 * In this example, read the database string first to JSON, then unpack the JSON to the data structure
 		 * You can store anything in here, as long as you can pack it to a String and unpack it again
 		 */
-		private static CustomData fromJsonString(String data) {
+		private static CustomData fromJsonObject(JsonObject obj) {
 			CustomData newObject = new CustomData();
 
-			final JsonObject obj = new Gson().fromJson(data, JsonObject.class);
 			for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
 				newObject.mData.put(entry.getKey(), entry.getValue().getAsInt());
 			}
@@ -68,13 +60,12 @@ public class ExampleServerListener implements Listener {
 		 * Store this data structure to a string suitable for storing in the database.
 		 * Unicode characters or even arbitrary bytes can be stored in this string
 		 */
-		private String toJsonString() {
+		private JsonObject toJsonObject() {
 			final JsonObject obj = new JsonObject();
 			for (Map.Entry<String, Integer> entry : mData.entrySet()) {
 				obj.addProperty(entry.getKey(), entry.getValue());
 			}
-
-			return new Gson().toJson(obj);
+			return obj;
 		}
 	}
 
@@ -100,57 +91,34 @@ public class ExampleServerListener implements Listener {
 	public void playerJoinEvent(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
 
-		MonumentaRedisSyncAPI.loadPlayerPluginData(player.getUniqueId(), IDENTIFIER, mPlugin, (String data, Exception exception) -> {
-			if (exception != null) {
-				mPlugin.getLogger().severe("Failed to get data for player " + player.getName() + ": " + exception.getMessage());
-				exception.printStackTrace();
-			} else if (data == null || data.isEmpty()) {
-				mPlugin.getLogger().info("No data for for player " + player.getName());
-			} else {
-				mAllPlayerData.put(player.getUniqueId(), CustomData.fromJsonString(data));
-				mPlugin.getLogger().info("Loaded data for player " + player.getName());
-			}
-
-			if (SAVE_PERIOD > 0) {
-				/* Start an autosave task for this player */
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						if (player.isOnline()) {
-							save(player);
-						} else {
-							/* Stop autosaving if the player logs out */
-							this.cancel();
-						}
-					}
-				}.runTaskTimer(mPlugin, SAVE_PERIOD, SAVE_PERIOD);
-			}
-		});
+		JsonObject data = MonumentaRedisSyncAPI.getPlayerPluginData(player.getUniqueId(), IDENTIFIER);
+		if (data == null) {
+			mPlugin.getLogger().info("No data for for player " + player.getName());
+		} else {
+			mAllPlayerData.put(player.getUniqueId(), CustomData.fromJsonObject(data));
+			mPlugin.getLogger().info("Loaded data for player " + player.getName());
+		}
 	}
 
-	/* When player leaves, save the data and remove it from the local storage */
+	/* Whenever player data is saved, also save the local data */
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void playerSaveEvent(PlayerSaveEvent event) {
+		Player player = event.getPlayer();
+
+		final CustomData playerData = mAllPlayerData.get(player.getUniqueId());
+		if (playerData != null) {
+			event.setPluginData(IDENTIFIER, playerData.toJsonObject());
+		}
+	}
+
+	/* When player leaves, remove it from the local storage a short bit later */
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void playerQuitEvent(PlayerQuitEvent event) {
-		Player player = event.getPlayer();
-		save(player);
-		mAllPlayerData.remove(player.getUniqueId());
-	}
-
-	private void save(final Player player) {
-		final CustomData playerData = mAllPlayerData.get(player.getUniqueId());
-		if (playerData == null) {
-			/* No data to save */
-			return;
-		}
-
-		MonumentaRedisSyncAPI.savePlayerPluginData(player.getUniqueId(), IDENTIFIER, playerData.toJsonString(), mPlugin, (Exception exception) -> {
-			if (exception != null) {
-				mPlugin.getLogger().severe("Failed to save data for player " + player.getName() + ": " + exception.getMessage());
-				exception.printStackTrace();
-			} else {
-				mPlugin.getLogger().info("Saved data for player " + player.getName());
+		Bukkit.getScheduler().runTaskLater(mPlugin, () -> {
+			if (!event.getPlayer().isOnline()) {
+				mAllPlayerData.remove(event.getPlayer().getUniqueId());
 			}
-		});
+		}, 100);
 	}
 
 	/* Returns null if player hasn't finished loading yet or is not logged in!
@@ -160,32 +128,5 @@ public class ExampleServerListener implements Listener {
 	 */
 	public CustomData getCustomData(final Player player) {
 		return mAllPlayerData.get(player.getUniqueId());
-	}
-
-
-	/*
-	 * You need something when the server shuts down to save all the current player data.
-	 * This works differently than normal save - you need to wait for all the data to save to the database.
-	 * Otherwise the server might shut down before the save requests are actually sent, and they won't make it.
-	 */
-	public void saveAllAndWaitForCompletion() {
-		Map<UUID, CompletableFuture<Boolean>> futures = new HashMap<>();
-
-		/* Go through all players, get their save data, and start saving them to the database */
-		for (Map.Entry<UUID, CustomData> entries : mAllPlayerData.entrySet()) {
-			futures.put(entries.getKey(), MonumentaRedisSyncAPI.savePlayerPluginData(entries.getKey(), IDENTIFIER, entries.getValue().toJsonString()));
-		}
-
-		/* Wait on each save and make sure it completed */
-		for (Map.Entry<UUID, CompletableFuture<Boolean>> future : futures.entrySet()) {
-			try {
-				boolean success = future.getValue().get();
-				if (!success) {
-					mPlugin.getLogger().severe("Failed to save data for player " + future.getKey() + ": redis received and declined write");
-				}
-			} catch (Exception ex) {
-				mPlugin.getLogger().severe("Failed to save data for player " + future.getKey() + ": " + ex.getMessage());
-			}
-		}
 	}
 }
