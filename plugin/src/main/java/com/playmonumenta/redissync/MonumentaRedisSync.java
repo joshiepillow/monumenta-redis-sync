@@ -1,13 +1,11 @@
 package com.playmonumenta.redissync;
 
 import java.io.File;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import com.playmonumenta.redissync.adapters.VersionAdapter;
+import com.playmonumenta.redissync.commands.ChangeLogLevel;
 import com.playmonumenta.redissync.commands.PlayerHistory;
 import com.playmonumenta.redissync.commands.PlayerLoadFromPlayer;
 import com.playmonumenta.redissync.commands.PlayerRollback;
@@ -15,10 +13,59 @@ import com.playmonumenta.redissync.commands.Stash;
 import com.playmonumenta.redissync.commands.TransferServer;
 import com.playmonumenta.redissync.commands.UpgradeAllPlayers;
 
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+
 public class MonumentaRedisSync extends JavaPlugin {
+	public static class CustomLogger {
+		private Logger mLogger;
+		private Level mLevel;
+
+		public CustomLogger(Logger logger, Level level) {
+			mLogger = logger;
+			mLevel = level;
+		}
+
+		public void setLevel(Level level) {
+			mLevel = level;
+		}
+
+		public void finest(String msg) {
+			if (mLevel == Level.FINEST) {
+				mLogger.info(msg);
+			}
+		}
+
+		public void finer(String msg) {
+			if (mLevel == Level.FINER || mLevel == Level.FINEST) {
+				mLogger.info(msg);
+			}
+		}
+
+		public void fine(String msg) {
+			if (mLevel == Level.FINE || mLevel == Level.FINER || mLevel == Level.FINEST) {
+				mLogger.info(msg);
+			}
+		}
+
+		public void info(String msg) {
+			mLogger.info(msg);
+		}
+
+		public void warning(String msg) {
+			mLogger.warning(msg);
+		}
+
+		public void severe(String msg) {
+			mLogger.severe(msg);
+		}
+	}
+
 	private static MonumentaRedisSync INSTANCE = null;
 	private RedisAPI mRedisAPI = null;
 	private VersionAdapter mVersionAdapter = null;
+	private CustomLogger mLogger = null;
 
 	private void loadVersionAdapter() {
 		/* From https://github.com/mbax/AbstractionExamplePlugin */
@@ -34,10 +81,10 @@ public class MonumentaRedisSync extends JavaPlugin {
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
-			getLogger().severe("Server version " + version + " is not supported!");
+			getCustomLogger().severe("Server version " + version + " is not supported!");
 			return;
 		}
-		getLogger().info("Loading support for " + version);
+		getCustomLogger().info("Loading support for " + version);
 	}
 
 	@Override
@@ -55,6 +102,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		PlayerRollback.register();
 		PlayerLoadFromPlayer.register();
 		UpgradeAllPlayers.register(this);
+		ChangeLogLevel.register(this);
 	}
 
 	@Override
@@ -71,8 +119,8 @@ public class MonumentaRedisSync extends JavaPlugin {
 		INSTANCE = this;
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
-		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
-		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getLogger(), mVersionAdapter), this);
+		getServer().getPluginManager().registerEvents(new DataEventListener(this.getCustomLogger(), mVersionAdapter), this);
+		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getCustomLogger(), mVersionAdapter), this);
 		if (Conf.getTicksPerPlayerAutosave() > 0) {
 			getServer().getPluginManager().registerEvents(new AutoSaveListener(this, mVersionAdapter), this);
 		}
@@ -110,6 +158,34 @@ public class MonumentaRedisSync extends JavaPlugin {
 		int ticksPerPlayerAutosave = config.getInt("ticksPerPlayerAutosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
 		boolean scoreboardCleanupEnabled = config.getBoolean("scoreboard_cleanup_enabled", true);
+
+		String level = config.getString("log_level", "INFO").toLowerCase();
+		switch (level) {
+			case "finest":
+				setLogLevel(Level.FINEST);
+				break;
+			case "finer":
+				setLogLevel(Level.FINER);
+				break;
+			case "fine":
+				setLogLevel(Level.FINE);
+				break;
+			default:
+				setLogLevel(Level.INFO);
+		}
+
 		new Conf(host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+	}
+
+	public void setLogLevel(Level level) {
+		this.getLogger().info("Changing log level to: " + level.toString());
+		getCustomLogger().setLevel(level);
+	}
+
+	public CustomLogger getCustomLogger() {
+		if (mLogger == null) {
+			mLogger = new CustomLogger(this.getLogger(), Level.INFO);
+		}
+		return mLogger;
 	}
 }

@@ -11,9 +11,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
+
+import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
+import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
+import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
+import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.playmonumenta.redissync.MonumentaRedisSync.CustomLogger;
+import com.playmonumenta.redissync.adapters.VersionAdapter;
+import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
+import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
+import com.playmonumenta.redissync.event.PlayerSaveEvent;
+import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -55,18 +67,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
-import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
-import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
-import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.playmonumenta.redissync.adapters.VersionAdapter;
-import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
-import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
-import com.playmonumenta.redissync.event.PlayerSaveEvent;
-import com.playmonumenta.redissync.utils.ScoreboardUtils;
-
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.api.async.RedisAsyncCommands;
@@ -77,7 +77,7 @@ public class DataEventListener implements Listener {
 	private static DataEventListener INSTANCE = null;
 
 	private final Gson mGson = new Gson();
-	private final Logger mLogger;
+	private final CustomLogger mLogger;
 	private final VersionAdapter mAdapter;
 	private final Set<UUID> mTransferringPlayers = new HashSet<>();
 	private final Map<UUID, ReturnParams> mReturnParams = new HashMap<>();
@@ -85,7 +85,7 @@ public class DataEventListener implements Listener {
 	private final Map<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
 	private final Map<UUID, JsonObject> mPluginData = new HashMap<>();
 
-	protected DataEventListener(Logger logger, VersionAdapter adapter) {
+	protected DataEventListener(CustomLogger logger, VersionAdapter adapter) {
 		mLogger = logger;
 		mAdapter = adapter;
 		INSTANCE = this;
@@ -367,6 +367,7 @@ public class DataEventListener implements Listener {
 		JsonObject pluginData = mPluginData.get(player.getUniqueId());
 
 		/* Call a custom save event that gives other plugins a chance to add data */
+		long startTime = System.currentTimeMillis();
 		PlayerSaveEvent newEvent = new PlayerSaveEvent(player);
 		Bukkit.getPluginManager().callEvent(newEvent);
 
@@ -380,6 +381,7 @@ public class DataEventListener implements Listener {
 				pluginData.add(ent.getKey(), ent.getValue());
 			}
 		}
+		mLogger.fine("Getting plugindata from other plugins took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
 
 		try {
 			/* Grab the return parameters if they were set when starting transfer. If they are null, that's fine too */
@@ -402,13 +404,17 @@ public class DataEventListener implements Listener {
 
 			/* history */
 			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);
-			commands.lpush(histPath, Conf.getShard() + "|" + Long.toString(System.currentTimeMillis()) + "|" + player.getName());
+			String history = Conf.getShard() + "|" + Long.toString(System.currentTimeMillis()) + "|" + player.getName();
+			mLogger.finer("history: " + history);
+			commands.lpush(histPath, history);
 			commands.ltrim(histPath, 0, Conf.getHistory());
 
 			/* plugindata */
 			if (pluginData != null) {
 				String pluginDataPath = MonumentaRedisSyncAPI.getRedisPluginDataPath(player);
-				commands.lpush(pluginDataPath, mGson.toJson(pluginData));
+				String pluginDataStr = mGson.toJson(pluginData);
+				mLogger.finer("plugindata: " + pluginDataStr);
+				commands.lpush(pluginDataPath, pluginDataStr);
 				commands.ltrim(pluginDataPath, 0, Conf.getHistory());
 			}
 
