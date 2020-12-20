@@ -83,9 +83,8 @@ public class ExampleServerListener implements Listener {
 	/*
 	 * When player joins, load their data and store it locally in a map
 	 *
-	 * It's important to work with a local copy of the data - it takes too long
-	 * to go to the database everytime you want to access the data.
-	 * Store it locally, manipulate it, and save it afterwards.
+	 * This data is retrieved from a cached copy in the redis plugin, it does not
+	 * result in a slow database lookup
 	 */
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void playerJoinEvent(PlayerJoinEvent event) {
@@ -121,11 +120,7 @@ public class ExampleServerListener implements Listener {
 		}, 100);
 	}
 
-	/* Returns null if player hasn't finished loading yet or is not logged in!
-	 * Your plugin needs to handle this situation. It might be a few seconds before data is available after joining...
-	 * This function will not access the database - it will give you the local copy.
-	 * This is fast/suitable for use on the main thread.
-	 */
+	/* Get the player's custom data for use by other parts of your plugin */
 	public CustomData getCustomData(final Player player) {
 		return mAllPlayerData.get(player.getUniqueId());
 	}
