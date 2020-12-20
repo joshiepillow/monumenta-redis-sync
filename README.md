@@ -50,7 +50,7 @@ Planned features:
 - An API for a global, plugin-accessible scoreboard
 - Storage of player stats data
 
-# Example Dependant Plugin
+## Example Dependant Plugin
 
 See the [example](example) directory for a complete example on how you might
 use this plugin as a dependency of one of your plugins, either for Paper or
@@ -74,6 +74,25 @@ the Monumenta Discord (https://discord.gg/eep9qcu) and message @Combustible.
 This plugin also requires CommandAPI 4.3. Other versions might also work, worth
 testing. If you try with a version that doesn't work (log errors, commands
 don't work, etc.) it's not going to damage your player data.
+
+## Maven dependency
+```xml
+    <repositories>
+        <repository>
+            <id>monumenta-redis-sync</id>
+            <url>https://raw.githubusercontent.com/TeamMonumenta/monumenta-redis-sync/master/mvn-repo/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.playmonumenta</groupId>
+            <artifactId>redissync</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+```
 
 ## Download
 
