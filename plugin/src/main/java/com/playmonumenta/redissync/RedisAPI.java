@@ -63,6 +63,8 @@ public class RedisAPI {
 	protected void shutdown() {
 		mConnection.close();
 		mConnection = null;
+		mStringByteConnection.close();
+		mStringByteConnection = null;
 		mRedisClient.shutdown();
 		mRedisClient = null;
 	}
@@ -88,6 +90,6 @@ public class RedisAPI {
 	}
 
 	public boolean isReady() {
-		return mConnection.isOpen();
+		return mConnection.isOpen() && mStringByteConnection.isOpen();
 	}
 }
