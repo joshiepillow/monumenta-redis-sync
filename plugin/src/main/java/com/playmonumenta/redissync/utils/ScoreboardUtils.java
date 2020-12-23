@@ -43,4 +43,22 @@ public class ScoreboardUtils {
 			score.setScore(scoreVal);
 		}
 	}
+
+	public static int getScoreboardValue(String name, String scoreboardValue) {
+		Objective objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective(scoreboardValue);
+		if (objective != null) {
+			return objective.getScore(name).getScore();
+		}
+
+		return 0;
+	}
+
+	public static void setScoreboardValue(String name, String scoreboardValue, int value) {
+		Objective objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective(scoreboardValue);
+		if (objective != null) {
+			final Score score;
+			score = objective.getScore(name);
+			score.setScore(value);
+		}
+	}
 }

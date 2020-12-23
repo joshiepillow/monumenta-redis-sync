@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -676,6 +677,7 @@ public class MonumentaRedisSyncAPI {
 			String advancements = new String(result.get(1), StandardCharsets.UTF_8);
 			String scores = new String(result.get(2), StandardCharsets.UTF_8);
 			String history = new String(result.get(3), StandardCharsets.UTF_8);
+			/* TODO plugindata */
 
 			return new RedisPlayerData(uuid, mrs.getVersionAdapter().retrieveSaveData(data, null), advancements, scores, history);
 		} catch (Exception e) {
@@ -711,6 +713,7 @@ public class MonumentaRedisSyncAPI {
 		if (result.isEmpty() || result.size() != 4 || result.get(0) == null
 		    || result.get(1) == null || result.get(2) == null || result.get(3) == null) {
 			mrs.getCustomLogger().severe("Failed to commit player data");
+			/* TODO plugindata */
 			return false;
 		}
 
@@ -735,5 +738,111 @@ public class MonumentaRedisSyncAPI {
 		commands.lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(data.getUniqueId()), data.getHistory().getBytes(StandardCharsets.UTF_8));
 
 		return commands.exec().thenApply((TransactionResult result) -> transformPlayerSaveResult(mrs, result)).toCompletableFuture();
+	}
+
+	/*********************************************************************************
+	 * rboard API
+	 */
+
+	@Nonnull
+	public static String getRedisRboardPath(@Nonnull String name) throws Exception {
+		if (!name.matches("^[-_0-9A-Za-z$]+$")) {
+			throw new Exception("Name '" + name + "' contains illegal characters, must match '^[-_$0-9A-Za-z$]+'");
+		}
+		return String.format("%s:rboard:%s", Conf.getDomain(), name);
+	}
+
+	/********************* Set *********************/
+	public static CompletableFuture<Long> rboardSet(String name, Map<String, String> data) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.hset(getRedisRboardPath(name), data).toCompletableFuture();
+	}
+
+	/********************* Add *********************/
+	public static CompletableFuture<Long> rboardAdd(String name, String key, long amount) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.hincrby(getRedisRboardPath(name), key, amount).toCompletableFuture();
+	}
+
+	/********************* Get *********************/
+	public static CompletableFuture<Map<String, String>> rboardGet(String name, String... keys) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
+			Map<String, String> transformed = new LinkedHashMap<>();
+			list.forEach(item -> transformed.put(item.getKey(), item.getValue()));
+			return transformed;
+		});
+	}
+
+	/********************* GetAndReset *********************/
+	public static CompletableFuture<Map<String, String>> rboardGetAndReset(String name, String... keys) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		commands.multi();
+		CompletableFuture<Map<String, String>> retval = commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
+			Map<String, String> transformed = new LinkedHashMap<>();
+			list.forEach(item -> transformed.put(item.getKey(), item.getValue()));
+			return transformed;
+		});
+		commands.hdel(getRedisRboardPath(name), keys).toCompletableFuture();
+		commands.exec();
+		return retval;
+	}
+
+	/********************* GetKeys *********************/
+	public static CompletableFuture<List<String>> rboardGetKeys(String name) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.hkeys(getRedisRboardPath(name)).toCompletableFuture();
+	}
+
+	/********************* GetAll *********************/
+	public static CompletableFuture<Map<String, String>> rboardGetAll(String name) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.hgetall(getRedisRboardPath(name)).toCompletableFuture();
+	}
+
+	/********************* Reset *********************/
+	public static CompletableFuture<Long> rboardReset(String name, String... keys) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.hdel(getRedisRboardPath(name), keys).toCompletableFuture();
+	}
+
+	/********************* ResetAll *********************/
+	public static CompletableFuture<Long> rboardResetAll(String name) throws Exception {
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		return commands.del(getRedisRboardPath(name)).toCompletableFuture();
+	}
+
+	/*
+	 * rboard API
+	 *********************************************************************************/
+
+	/**
+	 * Runs the result of an asynchronous transaction on the main thread after it is completed
+	 *
+	 * Will always call the callback function eventually, even if the resulting transaction fails or is lost.
+	 *
+	 * When the function is called, either data will be non-null and exception null,
+	 * or data will be null and the exception will be non-null
+	 */
+	public static <T> void runWhenAvailable(Plugin plugin, CompletableFuture<T> input, BiConsumer<T, Exception> func) {
+		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+			Exception ex;
+			T data;
+
+			try {
+				data = input.get();
+				ex = null;
+			} catch (Exception e) {
+				data = null;
+				ex = e;
+			}
+
+			final T result = data;
+			final Exception except = ex;
+
+			Bukkit.getScheduler().runTask(plugin, () -> {
+				func.accept(result, except);
+			});
+		});
 	}
 }
