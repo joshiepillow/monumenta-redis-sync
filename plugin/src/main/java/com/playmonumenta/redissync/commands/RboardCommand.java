@@ -102,7 +102,7 @@ public class RboardCommand {
 		arguments.clear();
 		arguments.put("set", new LiteralArgument("set"));
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			arguments.put("objective" + i, new ObjectiveArgument());
 			arguments.put("value" + i, new IntegerArgument());
 			regWrapper(arguments, action);
@@ -120,7 +120,7 @@ public class RboardCommand {
 		arguments.clear();
 		arguments.put("store", new LiteralArgument("store"));
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			arguments.put("objective" + i, new ObjectiveArgument());
 			regWrapper(arguments, action);
 		}
@@ -157,7 +157,7 @@ public class RboardCommand {
 		arguments.clear();
 		arguments.put("reset", new LiteralArgument("reset"));
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			arguments.put("objective" + i, new ObjectiveArgument());
 			regWrapper(arguments, action);
 		}
@@ -228,7 +228,7 @@ public class RboardCommand {
 		arguments.put("get", new LiteralArgument("get"));
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
 		arguments.put("function", new FunctionArgument());
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			arguments.put("objective" + i, new ObjectiveArgument());
 			regWrapper(arguments, action);
 		}
@@ -285,7 +285,7 @@ public class RboardCommand {
 		arguments.put("getandreset", new LiteralArgument("getandreset"));
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
 		arguments.put("function", new FunctionArgument());
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			arguments.put("objective" + i, new ObjectiveArgument());
 			regWrapper(arguments, action);
 		}
