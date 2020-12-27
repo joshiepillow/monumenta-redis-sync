@@ -787,11 +787,17 @@ public class MonumentaRedisSyncAPI {
 	/********************* Get *********************/
 	public static CompletableFuture<Map<String, String>> rboardGet(String name, String... keys) throws Exception {
 		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
-		return commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
+		commands.multi();
+		for (String key : keys) {
+			commands.hincrby(getRedisRboardPath(name), key, 0);
+		}
+		CompletableFuture<Map<String, String>> retval = commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
 			Map<String, String> transformed = new LinkedHashMap<>();
 			list.forEach(item -> transformed.put(item.getKey(), item.getValue()));
 			return transformed;
 		});
+		commands.exec();
+		return retval;
 	}
 
 	/********************* GetAndReset *********************/
