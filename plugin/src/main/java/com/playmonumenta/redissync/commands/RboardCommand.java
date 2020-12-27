@@ -228,7 +228,7 @@ public class RboardCommand {
 		arguments.put("get", new LiteralArgument("get"));
 		arguments.put("players", new EntitySelectorArgument(EntitySelector.MANY_PLAYERS));
 		arguments.put("function", new FunctionArgument());
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 15; i++) {
 			arguments.put("objective" + i, new ObjectiveArgument());
 			regWrapper(arguments, action);
 		}
