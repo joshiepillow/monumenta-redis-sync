@@ -133,15 +133,44 @@ public class MonumentaRedisSyncAPI {
 		return future.thenApply((data) -> data.keySet().stream().map((uuid) -> UUID.fromString(uuid)).collect(Collectors.toSet())).toCompletableFuture();
 	}
 
+
+	/**
+     * @deprecated
+     * This method that includes a "plugin" argument will be removed in a future version. Simply remove the plugin argument.
+     */
+	@Deprecated
 	public static void sendPlayer(Plugin plugin, Player player, String target) throws Exception {
 		sendPlayer(plugin, player, target, null);
 	}
 
+
+	/**
+     * @deprecated
+     * This method that includes a "plugin" argument will be removed in a future version. Simply remove the plugin argument.
+     */
+	@Deprecated
 	public static void sendPlayer(Plugin plugin, Player player, String target, Location returnLoc) throws Exception {
 		sendPlayer(plugin, player, target, returnLoc, null, null);
 	}
 
+	/**
+     * @deprecated
+     * This method that includes a "plugin" argument will be removed in a future version. Simply remove the plugin argument.
+     */
+	@Deprecated
 	public static void sendPlayer(Plugin plugin, Player player, String target, Location returnLoc, Float returnYaw, Float returnPitch) throws Exception {
+		sendPlayer(player, target, returnLoc, returnYaw, returnPitch);
+	}
+
+	public static void sendPlayer(Player player, String target) throws Exception {
+		sendPlayer(player, target, null);
+	}
+
+	public static void sendPlayer(Player player, String target, Location returnLoc) throws Exception {
+		sendPlayer(player, target, returnLoc, null, null);
+	}
+
+	public static void sendPlayer(Player player, String target, Location returnLoc, Float returnYaw, Float returnPitch) throws Exception {
 		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");
@@ -187,7 +216,7 @@ public class MonumentaRedisSyncAPI {
 			out.writeUTF("Connect");
 			out.writeUTF(target);
 
-			player.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+			player.sendPluginMessage(mrs, "BungeeCord", out.toByteArray());
 		});
 
 		mrs.getCustomLogger().fine("Transferring players took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");

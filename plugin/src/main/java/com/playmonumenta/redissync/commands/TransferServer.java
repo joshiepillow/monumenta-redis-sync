@@ -6,7 +6,6 @@ import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
@@ -20,7 +19,7 @@ import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
 
 public class TransferServer {
 	@SuppressWarnings("unchecked")
-	public static void register(Plugin plugin) {
+	public static void register() {
 		String command = "transferserver";
 		CommandPermission perms = CommandPermission.fromString("monumenta.command.transferserver");
 
@@ -31,7 +30,7 @@ public class TransferServer {
 			.executes((sender, args) -> {
 				for (Player player : (Collection<Player>)args[0]) {
 					try {
-					 MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1]);
+					 MonumentaRedisSyncAPI.sendPlayer(player, (String)args[1]);
 					} catch (Exception ex) {
 					 CommandAPI.fail(ex.getMessage());
 					}
@@ -47,7 +46,7 @@ public class TransferServer {
 			.executes((sender, args) -> {
 				for (Player player : (Collection<Player>)args[0]) {
 					try {
-					  MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2]);
+					  MonumentaRedisSyncAPI.sendPlayer(player, (String)args[1], (Location)args[2]);
 					} catch (Exception ex) {
 					  CommandAPI.fail(ex.getMessage());
 					}
@@ -65,7 +64,7 @@ public class TransferServer {
 			.executes((sender, args) -> {
 				for (Player player : (Collection<Player>)args[0]) {
 					try {
-						MonumentaRedisSyncAPI.sendPlayer(plugin, player, (String)args[1], (Location)args[2], (Float)args[3], (Float)args[4]);
+						MonumentaRedisSyncAPI.sendPlayer(player, (String)args[1], (Location)args[2], (Float)args[3], (Float)args[4]);
 					} catch (Exception ex) {
 						CommandAPI.fail(ex.getMessage());
 					}
@@ -81,7 +80,7 @@ public class TransferServer {
 			.executes((sender, args) -> {
 				if (sender instanceof Player) {
 					try {
-						MonumentaRedisSyncAPI.sendPlayer(plugin, (Player)sender, (String)args[0]);
+						MonumentaRedisSyncAPI.sendPlayer((Player)sender, (String)args[0]);
 					} catch (Exception ex) {
 						CommandAPI.fail(ex.getMessage());
 					}

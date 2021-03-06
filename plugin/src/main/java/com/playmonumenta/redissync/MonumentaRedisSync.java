@@ -97,7 +97,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		 *
 		 * These need to register immediately on load to prevent function loading errors
 		 */
-		TransferServer.register(this);
+		TransferServer.register();
 		Stash.register();
 		PlayerHistory.register(this);
 		PlayerRollback.register();
