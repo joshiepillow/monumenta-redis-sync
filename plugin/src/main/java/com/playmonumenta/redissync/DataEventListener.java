@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,7 @@ import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
@@ -60,6 +62,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -81,6 +84,8 @@ public class DataEventListener implements Listener {
 	private final VersionAdapter mAdapter;
 	private final Set<UUID> mTransferringPlayers = new HashSet<>();
 	private final Map<UUID, ReturnParams> mReturnParams = new HashMap<>();
+	/* Key = shoulder entity UUID (i.e. parrot), value = player */
+	private final Map<UUID, UUID> mTransferringPlayerShoulderEntities = new LinkedHashMap<>();
 
 	private final Map<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
 	private final Map<UUID, JsonObject> mPluginData = new HashMap<>();
@@ -98,6 +103,16 @@ public class DataEventListener implements Listener {
 			throw new Exception("Player " + player.getName() + " is already transferring");
 		}
 		INSTANCE.mTransferringPlayers.add(player.getUniqueId());
+
+		/* Record transferring player shoulder entity UUIDs to prevent them from being duplicated into the world by timing exploit */
+		Entity shoulder = player.getShoulderEntityLeft();
+		if (shoulder != null) {
+			INSTANCE.mTransferringPlayerShoulderEntities.put(shoulder.getUniqueId(), player.getUniqueId());
+		}
+		shoulder = player.getShoulderEntityRight();
+		if (shoulder != null) {
+			INSTANCE.mTransferringPlayerShoulderEntities.put(shoulder.getUniqueId(), player.getUniqueId());
+		}
 
 		/*
 		 * Start a task to automatically unlock the player if transfer times out.
@@ -126,6 +141,9 @@ public class DataEventListener implements Listener {
 	protected static void setPlayerAsNotTransferring(Player player) {
 		INSTANCE.mTransferringPlayers.remove(player.getUniqueId());
 		INSTANCE.mReturnParams.remove(player.getUniqueId());
+
+		/* Remove the shoulder entity spawn block (i.e. parrot) when player is not transferring anymore */
+		INSTANCE.mTransferringPlayerShoulderEntities.entrySet().removeIf(entry -> entry.getValue().equals(player.getUniqueId()));
 	}
 
 	protected static boolean isPlayerTransferring(Player player) {
@@ -430,7 +448,8 @@ public class DataEventListener implements Listener {
 	/********************* Transferring Restriction Event Handlers *********************/
 
 	@EventHandler(priority = EventPriority.LOWEST)
-	public void playerJoinEvent(PlayerJoinEvent event) {
+	public void playerLoginEvent(PlayerLoginEvent event) {
+		/* NOTE: This runs very early in the login process! Just want to make sure player isn't transferring anymore */
 		Player player = event.getPlayer();
 
 		setPlayerAsNotTransferring(player);
@@ -568,6 +587,15 @@ public class DataEventListener implements Listener {
 		ProjectileSource shooter = event.getEntity().getShooter();
 		if (shooter != null && shooter instanceof Player) {
 			cancelEventIfTransferring((Player)shooter, event);
+		}
+	}
+
+	/* Prevent shoulder entities of transferring players (i.e. parrots) from being duplicated into the world via timing exploit */
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void entitySpawnEvent(EntitySpawnEvent event) {
+		if (mTransferringPlayerShoulderEntities.containsKey(event.getEntity().getUniqueId())) {
+			mLogger.fine("Refused to spawn shoulder entity id: " + event.getEntity().getType().toString() + " uuid: " + event.getEntity().getUniqueId().toString());
+			event.setCancelled(true);
 		}
 	}
 
