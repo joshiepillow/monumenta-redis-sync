@@ -181,10 +181,6 @@
                     </transformers>
                     <relocations>
                         <relocation>
-                            <pattern>io.lettuce</pattern>
-                            <shadedPattern>com.playmonumenta.redissync.internal.io.lettuce</shadedPattern>
-                        </relocation>
-                        <relocation>
                             <pattern>org.reactivestreams</pattern>
                             <shadedPattern>com.playmonumenta.redissync.internal.org.reactivestreams</shadedPattern>
                         </relocation>
