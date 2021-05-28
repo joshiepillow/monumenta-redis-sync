@@ -73,8 +73,33 @@ import org.bukkit.scheduler.BukkitRunnable;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.output.KeyValueStreamingChannel;
 
 public class DataEventListener implements Listener {
+	private class PlayerUuidToNameStreamingChannel implements KeyValueStreamingChannel<String, String> {
+		public void onKeyValue(String key /*UUID*/, String value /*name*/) {
+			UUID uuid;
+			try {
+				uuid = UUID.fromString(key);
+			} catch (Exception e) {
+				return;
+			}
+			MonumentaRedisSyncAPI.updateUuidToName(uuid, value);
+		}
+	}
+
+	private class PlayerNameToUuidStreamingChannel implements KeyValueStreamingChannel<String, String> {
+		public void onKeyValue(String key /*name*/, String value /*UUID*/) {
+			UUID uuid;
+			try {
+				uuid = UUID.fromString(value);
+			} catch (Exception e) {
+				return;
+			}
+			MonumentaRedisSyncAPI.updateNameToUuid(key, uuid);
+		}
+	}
+
 	private static final String TRANSFER_UNLOCK_TASK_METAKEY = "RedisSyncTransferUnlockMetakey";
 	private static final int TRANSFER_UNLOCK_TIMEOUT_TICKS = 10 * 20;
 	private static DataEventListener INSTANCE = null;
@@ -94,6 +119,14 @@ public class DataEventListener implements Listener {
 		mLogger = logger;
 		mAdapter = adapter;
 		INSTANCE = this;
+
+		Bukkit.getServer().getScheduler().runTaskAsynchronously(MonumentaRedisSync.getInstance(), () -> {
+			KeyValueStreamingChannel<String, String> uuidToNameChannel = new PlayerUuidToNameStreamingChannel();
+			RedisAPI.getInstance().async().hgetall(uuidToNameChannel, "uuid2name");
+
+			KeyValueStreamingChannel<String, String> nameToUuidChannel = new PlayerNameToUuidStreamingChannel();
+			RedisAPI.getInstance().async().hgetall(nameToUuidChannel, "name2uuid");
+		});
 	}
 
 	/********************* Protected API *********************/
@@ -455,11 +488,14 @@ public class DataEventListener implements Listener {
 		setPlayerAsNotTransferring(player);
 
 		String nameStr = player.getName();
-		String uuidStr = player.getUniqueId().toString();
+		UUID uuid = player.getUniqueId();
+		String uuidStr = uuid.toString();
 
 		Bukkit.getServer().getScheduler().runTaskAsynchronously(MonumentaRedisSync.getInstance(), () -> {
 			RedisAPI.getInstance().async().hset("uuid2name", uuidStr, nameStr);
 			RedisAPI.getInstance().async().hset("name2uuid", nameStr, uuidStr);
+			MonumentaRedisSyncAPI.updateUuidToName(uuid, nameStr);
+			MonumentaRedisSyncAPI.updateNameToUuid(nameStr, uuid);
 		});
 	}
 

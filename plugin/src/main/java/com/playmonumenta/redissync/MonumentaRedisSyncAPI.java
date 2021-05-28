@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -115,6 +117,17 @@ public class MonumentaRedisSyncAPI {
 
 	public static final int TIMEOUT_SECONDS = 10;
 
+	private static Map<String, UUID> mNameToUuid = new ConcurrentHashMap<>();
+	private static Map<UUID, String> mUuidToName = new ConcurrentHashMap<>();
+
+	protected static void updateUuidToName(UUID uuid, String name) {
+		mUuidToName.put(uuid, name);
+	}
+
+	protected static void updateNameToUuid(String name, UUID uuid) {
+		mNameToUuid.put(name, uuid);
+	}
+
 	public static CompletableFuture<String> uuidToName(UUID uuid) {
 		return RedisAPI.getInstance().async().hget("uuid2name", uuid.toString()).toCompletableFuture();
 	}
@@ -132,6 +145,32 @@ public class MonumentaRedisSyncAPI {
 		RedisFuture<Map<String, String>> future = RedisAPI.getInstance().async().hgetall("uuid2name");
 		return future.thenApply((data) -> data.keySet().stream().map((uuid) -> UUID.fromString(uuid)).collect(Collectors.toSet())).toCompletableFuture();
 	}
+
+	public static String cachedUuidToName(UUID uuid) {
+		return mUuidToName.get(uuid);
+	}
+
+	public static UUID cachedNameToUuid(String name) {
+		return mNameToUuid.get(name);
+	}
+
+	public static Set<String> getAllCachedPlayerNames() {
+		return new ConcurrentSkipListSet<>(mNameToUuid.keySet());
+	}
+
+	public static Set<UUID> getAllCachedPlayerUuids() {
+		return new ConcurrentSkipListSet<>(mUuidToName.keySet());
+	}
+
+	public static String getCachedCurrentName(String oldName) {
+		UUID uuid = cachedNameToUuid(oldName);
+		if (uuid == null) {
+			return null;
+		}
+		return cachedUuidToName(uuid);
+	}
+
+	/* TODO In CommandAPI 6.0.0, use a Trie to handle IGN suggestions */
 
 
 	/**
