@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 
@@ -21,7 +22,6 @@ import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.playmonumenta.redissync.MonumentaRedisSync.CustomLogger;
 import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
@@ -61,7 +61,6 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -105,7 +104,7 @@ public class DataEventListener implements Listener {
 	private static DataEventListener INSTANCE = null;
 
 	private final Gson mGson = new Gson();
-	private final CustomLogger mLogger;
+	private final Logger mLogger;
 	private final VersionAdapter mAdapter;
 	private final Set<UUID> mTransferringPlayers = new HashSet<>();
 	private final Map<UUID, ReturnParams> mReturnParams = new HashMap<>();
@@ -115,7 +114,7 @@ public class DataEventListener implements Listener {
 	private final Map<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
 	private final Map<UUID, JsonObject> mPluginData = new HashMap<>();
 
-	protected DataEventListener(CustomLogger logger, VersionAdapter adapter) {
+	protected DataEventListener(Logger logger, VersionAdapter adapter) {
 		mLogger = logger;
 		mAdapter = adapter;
 		INSTANCE = this;

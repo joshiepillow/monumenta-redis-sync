@@ -2,6 +2,8 @@ package com.playmonumenta.redissync;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
@@ -10,6 +12,7 @@ import net.md_5.bungee.config.YamlConfiguration;
 
 public class MonumentaRedisSyncBungee extends Plugin {
 	private RedisAPI mRedisAPI = null;
+	private CustomLogger mLogger = null;
 
 	@Override
 	public void onEnable() {
@@ -30,18 +33,52 @@ public class MonumentaRedisSyncBungee extends Plugin {
 	}
 
 	private void loadConfig() {
-		File configFile = new File(this.getDataFolder(), "config.yml");
+		File configFile = new File(getDataFolder(), "config.yml");
 		/* TODO: Default file if not exist */
-		String host = "redis";
-		int port = 6379;
+		Configuration config;
 		try {
-			Configuration config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(configFile);
-			host = config.getString("redis_host", host);
-			port = config.getInt("redis_port", port);
+			config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(configFile);
 		} catch (IOException ex) {
-			this.getLogger().warning("Failed to load config file " + configFile.getPath() + " : " + ex.getMessage());
-			return;
+			getLogger().warning("Failed to load config file, using defaults: " + ex.getMessage());
+			config = new Configuration();
 		}
-		new Conf(host, port, null, "bungee", -1, -1, true, false);
+		String host = config.getString("redis_host", "redis");
+		int port = config.getInt("redis_port", 6379);
+		String domain = null;
+		String shard = "bungee";
+		int history = -1;
+		int ticksPerPlayerAutosave = -1;
+		boolean savingDisabled = true;
+		boolean scoreboardCleanupEnabled = false;
+
+		String level = config.getString("log_level", "INFO").toLowerCase();
+		switch (level) {
+			case "finest":
+				setLogLevel(Level.FINEST);
+				break;
+			case "finer":
+				setLogLevel(Level.FINER);
+				break;
+			case "fine":
+				setLogLevel(Level.FINE);
+				break;
+			default:
+				setLogLevel(Level.INFO);
+		}
+
+		new Conf(host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+	}
+
+	public void setLogLevel(Level level) {
+		super.getLogger().info("Changing log level to: " + level.toString());
+		getLogger().setLevel(level);
+	}
+
+	@Override
+	public Logger getLogger() {
+		if (mLogger == null) {
+			mLogger = new CustomLogger(super.getLogger(), Level.INFO);
+		}
+		return mLogger;
 	}
 }

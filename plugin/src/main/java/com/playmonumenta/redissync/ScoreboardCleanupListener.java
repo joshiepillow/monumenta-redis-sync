@@ -4,10 +4,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
-import com.playmonumenta.redissync.MonumentaRedisSync.CustomLogger;
 import com.playmonumenta.redissync.adapters.VersionAdapter;
 
 import org.bukkit.Bukkit;
@@ -24,11 +24,11 @@ public class ScoreboardCleanupListener implements Listener {
 	private static final int CLEANUP_LOGOUT_DELAY = 20 * 60 * 1; // 1 minute
 
 	private final Plugin mPlugin;
-	private final CustomLogger mLogger;
+	private final Logger mLogger;
 	private final Map<UUID, BukkitRunnable> mCleanupTasks = new HashMap<>();
 	private final VersionAdapter mAdapter;
 
-	protected ScoreboardCleanupListener(Plugin plugin, CustomLogger logger, VersionAdapter adapter) {
+	protected ScoreboardCleanupListener(Plugin plugin, Logger logger, VersionAdapter adapter) {
 		mPlugin = plugin;
 		mLogger = logger;
 		mAdapter = adapter;

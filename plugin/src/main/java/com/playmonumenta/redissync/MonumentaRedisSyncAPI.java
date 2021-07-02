@@ -258,7 +258,7 @@ public class MonumentaRedisSyncAPI {
 			player.sendPluginMessage(mrs, "BungeeCord", out.toByteArray());
 		});
 
-		mrs.getCustomLogger().fine("Transferring players took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
+		mrs.getLogger().fine("Transferring players took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 	}
 
 	public static void stashPut(Player player, String name) throws Exception {
@@ -296,12 +296,12 @@ public class MonumentaRedisSyncAPI {
 				futures.add(api.async().hset(getStashPath(), saveName.toString() + "-history", historyFuture.get()));
 
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-					MonumentaRedisSync.getInstance().getCustomLogger().severe("Got timeout waiting to commit stash data for player '" + player.getName() + "'");
+					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout waiting to commit stash data for player '" + player.getName() + "'");
 					player.sendMessage(ChatColor.RED + "Got timeout trying to commit stash data");
 					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
-				MonumentaRedisSync.getInstance().getCustomLogger().severe("Got exception while committing stash data for player '" + player.getName() + "'");
+				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while committing stash data for player '" + player.getName() + "'");
 				ex.printStackTrace();
 				player.sendMessage(ChatColor.RED + "Failed to save stash data: " + ex.getMessage());
 				return;
@@ -363,12 +363,12 @@ public class MonumentaRedisSyncAPI {
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(player), "stash@" + historyFuture.get()));
 
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-					MonumentaRedisSync.getInstance().getCustomLogger().severe("Got timeout loading stash data for player '" + player.getName() + "'");
+					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading stash data for player '" + player.getName() + "'");
 					player.sendMessage(ChatColor.RED + "Got timeout loading stash data");
 					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
-				MonumentaRedisSync.getInstance().getCustomLogger().severe("Got exception while loading stash data for player '" + player.getName() + "'");
+				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading stash data for player '" + player.getName() + "'");
 				ex.printStackTrace();
 				player.sendMessage(ChatColor.RED + "Failed to load stash data: " + ex.getMessage());
 				return;
@@ -465,12 +465,12 @@ public class MonumentaRedisSyncAPI {
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(player), "rollback@" + historyFuture.get()));
 
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-					MonumentaRedisSync.getInstance().getCustomLogger().severe("Got timeout loading rollback data for player '" + player.getName() + "'");
+					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading rollback data for player '" + player.getName() + "'");
 					moderator.sendMessage(ChatColor.RED + "Got timeout loading rollback data");
 					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
-				MonumentaRedisSync.getInstance().getCustomLogger().severe("Got exception while loading rollback data for player '" + player.getName() + "'");
+				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading rollback data for player '" + player.getName() + "'");
 				ex.printStackTrace();
 				moderator.sendMessage(ChatColor.RED + "Failed to load rollback data: " + ex.getMessage());
 				return;
@@ -526,12 +526,12 @@ public class MonumentaRedisSyncAPI {
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(loadto), "loadfrom@" + loadfrom.getName() + "@" + historyFuture.get()));
 
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
-					MonumentaRedisSync.getInstance().getCustomLogger().severe("Got timeout loading data for player '" + loadfrom.getName() + "'");
+					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading data for player '" + loadfrom.getName() + "'");
 					loadto.sendMessage(ChatColor.RED + "Got timeout loading data");
 					return;
 				}
 			} catch (InterruptedException | ExecutionException ex) {
-				MonumentaRedisSync.getInstance().getCustomLogger().severe("Got exception while loading data for player '" + loadfrom.getName() + "'");
+				MonumentaRedisSync.getInstance().getLogger().severe("Got exception while loading data for player '" + loadfrom.getName() + "'");
 				ex.printStackTrace();
 				loadto.sendMessage(ChatColor.RED + "Failed to load data: " + ex.getMessage());
 				return;
@@ -668,7 +668,7 @@ public class MonumentaRedisSyncAPI {
 			mrs.getVersionAdapter().savePlayer(player);
 		} catch (Exception ex) {
 			String message = "Failed to save player data for player '" + player.getName() + "'";
-			mrs.getCustomLogger().severe(message);
+			mrs.getLogger().severe(message);
 			ex.printStackTrace();
 			CommandAPI.fail(message);
 		}
@@ -755,7 +755,7 @@ public class MonumentaRedisSyncAPI {
 	private static RedisPlayerData transformPlayerData(@Nonnull MonumentaRedisSync mrs, @Nonnull UUID uuid, @Nonnull TransactionResult result) {
 		if (result.isEmpty() || result.size() != 4 || result.get(0) == null
 		    || result.get(1) == null || result.get(2) == null || result.get(3) == null) {
-			mrs.getCustomLogger().severe("Failed to retrieve player data");
+			mrs.getLogger().severe("Failed to retrieve player data");
 			return null;
 		}
 
@@ -768,7 +768,7 @@ public class MonumentaRedisSyncAPI {
 
 			return new RedisPlayerData(uuid, mrs.getVersionAdapter().retrieveSaveData(data, null), advancements, scores, pluginData, history);
 		} catch (Exception e) {
-			mrs.getCustomLogger().severe("Failed to parse player data: " + e.getMessage());
+			mrs.getLogger().severe("Failed to parse player data: " + e.getMessage());
 			return null;
 		}
 	}
@@ -800,7 +800,7 @@ public class MonumentaRedisSyncAPI {
 	private static Boolean transformPlayerSaveResult(@Nonnull MonumentaRedisSync mrs, @Nonnull TransactionResult result) {
 		if (result.isEmpty() || result.size() != 4 || result.get(0) == null
 		    || result.get(1) == null || result.get(2) == null || result.get(3) == null || result.get(4) == null) {
-			mrs.getCustomLogger().severe("Failed to commit player data");
+			mrs.getLogger().severe("Failed to commit player data");
 			return false;
 		}
 

@@ -1,11 +1,11 @@
 package com.playmonumenta.redissync;
 
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import com.google.gson.JsonObject;
 import com.playmonumenta.networkrelay.NetworkRelayAPI;
 import com.playmonumenta.networkrelay.NetworkRelayMessageEvent;
-import com.playmonumenta.redissync.MonumentaRedisSync.CustomLogger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -16,10 +16,10 @@ import org.bukkit.event.player.PlayerLoginEvent;
 
 public class NetworkRelayListener implements Listener {
 	private static final String LOGIN_EVENT_CHANNEL = "com.playmonumenta.redissync.NetworkRelayListener.loginEvent";
-	private static CustomLogger mLogger;
+	private static Logger mLogger;
 	private static String mShardName;
 
-	protected NetworkRelayListener(CustomLogger logger) {
+	protected NetworkRelayListener(Logger logger) {
 		mLogger = logger;
 		try {
 			mShardName = NetworkRelayAPI.getShardName();

@@ -19,50 +19,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class MonumentaRedisSync extends JavaPlugin {
-	public static class CustomLogger {
-		private Logger mLogger;
-		private Level mLevel;
-
-		public CustomLogger(Logger logger, Level level) {
-			mLogger = logger;
-			mLevel = level;
-		}
-
-		public void setLevel(Level level) {
-			mLevel = level;
-		}
-
-		public void finest(String msg) {
-			if (mLevel == Level.FINEST) {
-				mLogger.info(msg);
-			}
-		}
-
-		public void finer(String msg) {
-			if (mLevel == Level.FINER || mLevel == Level.FINEST) {
-				mLogger.info(msg);
-			}
-		}
-
-		public void fine(String msg) {
-			if (mLevel == Level.FINE || mLevel == Level.FINER || mLevel == Level.FINEST) {
-				mLogger.info(msg);
-			}
-		}
-
-		public void info(String msg) {
-			mLogger.info(msg);
-		}
-
-		public void warning(String msg) {
-			mLogger.warning(msg);
-		}
-
-		public void severe(String msg) {
-			mLogger.severe(msg);
-		}
-	}
-
 	private static MonumentaRedisSync INSTANCE = null;
 	private RedisAPI mRedisAPI = null;
 	private VersionAdapter mVersionAdapter = null;
@@ -82,10 +38,10 @@ public class MonumentaRedisSync extends JavaPlugin {
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
-			getCustomLogger().severe("Server version " + version + " is not supported!");
+			getLogger().severe("Server version " + version + " is not supported!");
 			return;
 		}
-		getCustomLogger().info("Loading support for " + version);
+		getLogger().info("Loading support for " + version);
 	}
 
 	@Override
@@ -121,14 +77,14 @@ public class MonumentaRedisSync extends JavaPlugin {
 		INSTANCE = this;
 		loadConfig();
 		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
-		getServer().getPluginManager().registerEvents(new DataEventListener(this.getCustomLogger(), mVersionAdapter), this);
-		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getCustomLogger(), mVersionAdapter), this);
+		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
+		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getLogger(), mVersionAdapter), this);
 		if (Conf.getTicksPerPlayerAutosave() > 0) {
 			getServer().getPluginManager().registerEvents(new AutoSaveListener(this, mVersionAdapter), this);
 		}
 
 		if (getServer().getPluginManager().isPluginEnabled("MonumentaNetworkRelay")) {
-			getServer().getPluginManager().registerEvents(new NetworkRelayListener(this.getCustomLogger()), this);
+			getServer().getPluginManager().registerEvents(new NetworkRelayListener(this.getLogger()), this);
 		}
 
 		this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
@@ -184,13 +140,14 @@ public class MonumentaRedisSync extends JavaPlugin {
 	}
 
 	public void setLogLevel(Level level) {
-		this.getLogger().info("Changing log level to: " + level.toString());
-		getCustomLogger().setLevel(level);
+		super.getLogger().info("Changing log level to: " + level.toString());
+		getLogger().setLevel(level);
 	}
 
-	public CustomLogger getCustomLogger() {
+	@Override
+	public Logger getLogger() {
 		if (mLogger == null) {
-			mLogger = new CustomLogger(this.getLogger(), Level.INFO);
+			mLogger = new CustomLogger(super.getLogger(), Level.INFO);
 		}
 		return mLogger;
 	}
