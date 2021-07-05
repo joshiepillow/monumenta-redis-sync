@@ -23,7 +23,7 @@ public class PlayerSaveEvent extends PlayerEvent {
 	 * Sets the plugin data that should be saved for this player
 	 *
 	 * @param pluginIdentifier  A unique string key identifying which plugin data to get for this player
-	 * @param data              The data to save.
+	 * @param pluginData        The data to save.
 	 */
 	public void setPluginData(String pluginIdentifier, JsonObject pluginData) {
 		if (mPluginData == null) {

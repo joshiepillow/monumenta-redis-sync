@@ -10,12 +10,11 @@ import org.bukkit.entity.Player;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
-import dev.jorel.commandapi.arguments.Argument;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
+import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
 import dev.jorel.commandapi.arguments.FloatArgument;
 import dev.jorel.commandapi.arguments.LocationArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
 
 public class TransferServer {
 	@SuppressWarnings("unchecked")

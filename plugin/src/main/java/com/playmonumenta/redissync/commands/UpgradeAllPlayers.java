@@ -15,20 +15,20 @@ import org.bukkit.scheduler.BukkitRunnable;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
-import dev.jorel.commandapi.arguments.Argument;
 
 public class UpgradeAllPlayers {
 	public static void register(MonumentaRedisSync plugin) {
-		new CommandAPICommand("upgradeallplayers")
-			.withPermission(CommandPermission.fromString("monumenta.command.upgradeallplayers"))
-			.executes((sender, args) -> {
-				try {
-					run(plugin);
-				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
-				}
-			}
-		).register();
+		new CommandAPICommand("monumenta")
+			.withSubcommand(new CommandAPICommand("redisSync")
+				.withSubcommand(new CommandAPICommand("UpgradeAllPlayers"))
+					.withPermission(CommandPermission.fromString("monumenta.redissync.upgradeallplayers"))
+					.executes((sender, args) -> {
+						try {
+							run(plugin);
+						} catch (Exception ex) {
+							CommandAPI.fail(ex.getMessage());
+						}
+			})).register();
 	}
 
 	private static void updatePlayer(MonumentaRedisSync mrs, UUID uuid) {
