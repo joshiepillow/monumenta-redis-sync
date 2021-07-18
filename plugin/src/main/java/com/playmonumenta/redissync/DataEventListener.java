@@ -508,6 +508,19 @@ public class DataEventListener implements Listener {
 			}
 			player.removeMetadata(TRANSFER_UNLOCK_TASK_METAKEY, MonumentaRedisSync.getInstance());
 		}
+
+		UUID playerUUID = player.getUniqueId();
+
+		Bukkit.getScheduler().runTaskLater(MonumentaRedisSync.getInstance(), () -> {
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				/* Abort if this player is somehow back online */
+				if (p.getUniqueId().equals(playerUUID)) {
+					return;
+				}
+
+				mPluginData.remove(playerUUID);
+			}
+		}, 50);
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
