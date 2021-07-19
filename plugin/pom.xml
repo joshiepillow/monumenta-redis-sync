@@ -53,6 +53,13 @@
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>com.playmonumenta.redissync</groupId>
+            <artifactId>v1_17_R1</artifactId>
+            <version>dev</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
 
         <!-- External dependencies -->
         <dependency>
