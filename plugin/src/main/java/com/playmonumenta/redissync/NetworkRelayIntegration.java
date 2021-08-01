@@ -73,7 +73,7 @@ public class NetworkRelayIntegration implements Listener {
 
 	@EventHandler(priority = EventPriority.LOW)
 	public void gatherHeartbeatDataEvent(GatherHeartbeatDataEvent event) throws Exception {
-		mLogger.finer("Got relay request for heartbeat data");
+		mLogger.finest("Got relay request for heartbeat data");
 		/* Don't actually need to set any data - just being present is sufficient */
 		event.setPluginData(PLUGIN_IDENTIFIER, new JsonObject());
 	}

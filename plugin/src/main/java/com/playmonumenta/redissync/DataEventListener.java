@@ -232,9 +232,13 @@ public class DataEventListener implements Listener {
 			return;
 		}
 
+		mLogger.fine("Blocking wait for pending save for player=" + player.getName());
+
 		if (!LettuceFutures.awaitAll(MonumentaRedisSyncAPI.TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 			mLogger.severe("Got timeout waiting to commit transactions for player '" + player.getName() + "'. This is very bad!");
 		}
+
+		mLogger.fine("Pending save completed for player=" + player.getName());
 	}
 
 	/********************* Data Save/Load Event Handlers *********************/
@@ -248,7 +252,8 @@ public class DataEventListener implements Listener {
 			return;
 		}
 
-		mLogger.fine("Loading advancements data for player=" + player.getName());
+		long startTime = System.currentTimeMillis();
+		mLogger.fine("Started loading advancements data for player=" + player.getName());
 
 		/* Wait until player has finished saving if they just logged out and back in */
 		blockingWaitForPlayerToSave(player);
@@ -259,7 +264,8 @@ public class DataEventListener implements Listener {
 		try {
 			/* Advancements */
 			final String advanceData = advanceFuture.get();
-			mLogger.finer(() -> "Data:" + advanceData);
+			mLogger.finer(() -> "Advancements data loaded for player=" + player.getName());
+			mLogger.finest(() -> "Advancements data:" + advanceData);
 			if (advanceData != null) {
 				event.setJsonData(advanceData);
 			} else {
@@ -267,9 +273,9 @@ public class DataEventListener implements Listener {
 			}
 
 			/* Scoreboards */
-			mLogger.fine("Loading scoreboard data for player=" + player.getName());
 			final String scoreData = scoreFuture.get();
-			mLogger.finer(() -> "Data:" + scoreData);
+			mLogger.fine("Scoreboard data loaded for player=" + player.getName());
+			mLogger.finest(() -> "Score data:" + scoreData);
 			if (scoreData != null) {
 				JsonObject obj = mGson.fromJson(scoreData, JsonObject.class);
 				if (obj != null) {
@@ -280,6 +286,8 @@ public class DataEventListener implements Listener {
 			} else {
 				mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			}
+
+			mLogger.fine(() -> "Processing PlayerAdvancementDataLoadEvent took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 		} catch (InterruptedException | ExecutionException ex) {
 			mLogger.severe("Failed to get advancements/scores data for player '" + player.getName() + "'. This is very bad!");
 			ex.printStackTrace();
@@ -315,7 +323,7 @@ public class DataEventListener implements Listener {
 
 		/* Advancements */
 		mLogger.fine("Saving advancements data for player=" + player.getName());
-		mLogger.finer(() -> "Data:" + event.getJsonData());
+		mLogger.finest(() -> "Data:" + event.getJsonData());
 		String advPath = MonumentaRedisSyncAPI.getRedisAdvancementsPath(player);
 		commands.lpush(advPath, event.getJsonData());
 		commands.ltrim(advPath, 0, Conf.getHistory());
@@ -325,7 +333,7 @@ public class DataEventListener implements Listener {
 		long startTime = System.currentTimeMillis();
 		String data = mGson.toJson(mAdapter.getPlayerScoresAsJson(player.getName(), Bukkit.getScoreboardManager().getMainScoreboard()));
 		mLogger.fine(() -> "Scoreboard saving took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
-		mLogger.finer(() -> "Data:" + data);
+		mLogger.finest(() -> "Data:" + data);
 		String scorePath = MonumentaRedisSyncAPI.getRedisScoresPath(player);
 		commands.lpush(scorePath, data);
 		commands.ltrim(scorePath, 0, Conf.getHistory());
@@ -345,7 +353,8 @@ public class DataEventListener implements Listener {
 			return;
 		}
 
-		mLogger.fine("Loading data for player=" + player.getName());
+		long startTime = System.currentTimeMillis();
+		mLogger.fine("Started loading data for player=" + player.getName());
 
 		/* Wait until player has finished saving if they just logged out and back in */
 		blockingWaitForPlayerToSave(player);
@@ -361,7 +370,8 @@ public class DataEventListener implements Listener {
 				mLogger.warning("No data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 				return;
 			}
-			mLogger.finer(() -> "data: " + b64encode(data));
+			mLogger.finer("Player data loaded for player=" + player.getName());
+			mLogger.finest(() -> "Player data: " + b64encode(data));
 
 			/* Load per-shard data */
 			String shardData = shardDataFuture.get();
@@ -369,7 +379,8 @@ public class DataEventListener implements Listener {
 				/* This is not an error - this will happen whenever a player first visits a new shard */
 				mLogger.fine("Player '" + player.getName() + "' has never been to this shard before");
 			} else {
-				mLogger.finer(() -> "sharddata: " + shardData);
+				mLogger.finer("Shard data loaded for player=" + player.getName());
+				mLogger.finest(() -> "Shard data: " + shardData);
 			}
 
 			/* Load plugin data */
@@ -378,11 +389,14 @@ public class DataEventListener implements Listener {
 				mLogger.fine("Player '" + player.getName() + "' has no plugin data");
 			} else {
 				mPluginData.put(player.getUniqueId(), mGson.fromJson(pluginData, JsonObject.class));
-				mLogger.finer(() -> "plugindata: " + pluginData);
+				mLogger.finer("Plugin data loaded for player=" + player.getName());
+				mLogger.finest(() -> "Plugin data: " + pluginData);
 			}
 
 			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardData);
 			event.setData(nbtTagCompound);
+
+			mLogger.fine(() -> "Processing PlayerDataLoadEvent took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 		} catch (IOException | InterruptedException | ExecutionException ex) {
 			mLogger.severe("Failed to load player data: " + ex.toString());
 			ex.printStackTrace();
@@ -439,7 +453,7 @@ public class DataEventListener implements Listener {
 			ReturnParams returnParams = mReturnParams.get(player.getUniqueId());
 			SaveData data = mAdapter.extractSaveData(event.getData(), returnParams);
 
-			mLogger.finer(() -> "data: " + b64encode(data.getData()));
+			mLogger.finest(() -> "data: " + b64encode(data.getData()));
 			String dataPath = MonumentaRedisSyncAPI.getRedisDataPath(player);
 			futures.add(RedisAPI.getInstance().asyncStringBytes().lpush(dataPath, data.getData()));
 			futures.add(RedisAPI.getInstance().asyncStringBytes().ltrim(dataPath, 0, Conf.getHistory()));
@@ -449,21 +463,21 @@ public class DataEventListener implements Listener {
 			futures.add(commands.multi()); /* < MULTI */
 
 			/* sharddata */
-			mLogger.finer(() -> "sharddata: " + data.getShardData());
+			mLogger.finest(() -> "sharddata: " + data.getShardData());
 			String shardDataPath = MonumentaRedisSyncAPI.getRedisPerShardDataPath(player);
 			commands.hset(shardDataPath, Conf.getShard(), data.getShardData());
 
 			/* history */
 			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);
 			String history = Conf.getShard() + "|" + Long.toString(System.currentTimeMillis()) + "|" + player.getName();
-			mLogger.finer(() -> "history: " + history);
+			mLogger.finest(() -> "history: " + history);
 			commands.lpush(histPath, history);
 			commands.ltrim(histPath, 0, Conf.getHistory());
 
 			/* plugindata */
 			String pluginDataPath = MonumentaRedisSyncAPI.getRedisPluginDataPath(player);
 			String pluginDataStr = mGson.toJson(pluginData);
-			mLogger.finer(() -> "plugindata: " + pluginDataStr);
+			mLogger.finest(() -> "plugindata: " + pluginDataStr);
 			commands.lpush(pluginDataPath, pluginDataStr);
 			commands.ltrim(pluginDataPath, 0, Conf.getHistory());
 
