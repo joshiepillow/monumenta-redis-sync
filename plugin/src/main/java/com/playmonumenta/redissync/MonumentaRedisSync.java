@@ -77,13 +77,6 @@ public class MonumentaRedisSync extends JavaPlugin {
 		System.setProperty("com.playmonumenta.redissync.internal.io.netty", "com.playmonumenta.redissync.internal");
 
 		INSTANCE = this;
-		loadConfig();
-		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
-		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
-		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getLogger(), mVersionAdapter), this);
-		if (Conf.getTicksPerPlayerAutosave() > 0) {
-			getServer().getPluginManager().registerEvents(new AutoSaveListener(this, mVersionAdapter), this);
-		}
 
 		if (getServer().getPluginManager().isPluginEnabled("MonumentaNetworkRelay")) {
 			try {
@@ -91,6 +84,14 @@ public class MonumentaRedisSync extends JavaPlugin {
 			} catch (Exception ex) {
 				getLogger().severe("Failed to enable MonumentaNetworkRelay integration: " + ex.getMessage());
 			}
+		}
+
+		loadConfig();
+		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
+		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
+		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getLogger(), mVersionAdapter), this);
+		if (Conf.getTicksPerPlayerAutosave() > 0) {
+			getServer().getPluginManager().registerEvents(new AutoSaveListener(this, mVersionAdapter), this);
 		}
 
 		this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
