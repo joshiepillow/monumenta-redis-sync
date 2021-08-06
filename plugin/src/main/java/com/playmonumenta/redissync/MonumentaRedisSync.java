@@ -133,7 +133,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		String shardDataName = config.getString("shard_data_name", defaultWorld.getUID().toString() + ":" + defaultWorld.getName());
 
 		int history = config.getInt("history_amount", 20);
-		int ticksPerPlayerAutosave = config.getInt("ticksPerPlayerAutosave", 6060);
+		int ticksPerPlayerAutosave = config.getInt("ticks_per_player_autosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
 		boolean scoreboardCleanupEnabled = config.getBoolean("scoreboard_cleanup_enabled", true);
 
@@ -152,7 +152,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new Conf(host, port, domain, shard, shardDataName, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new Conf(getLogger(), host, port, domain, shard, shardDataName, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
 	}
 
 	public void setLogLevel(Level level) {

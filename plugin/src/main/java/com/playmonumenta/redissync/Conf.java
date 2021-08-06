@@ -1,5 +1,7 @@
 package com.playmonumenta.redissync;
 
+import java.util.logging.Logger;
+
 public class Conf {
 	private static Conf INSTANCE = null;
 
@@ -49,7 +51,7 @@ public class Conf {
 		return INSTANCE.mScoreboardCleanupEnabled;
 	}
 
-	protected Conf(String host, int port, String domain, String shard, String shardDataName, int history, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
+	protected Conf(Logger logger, String host, int port, String domain, String shard, String shardDataName, int history, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;
@@ -60,5 +62,16 @@ public class Conf {
 		mSavingDisabled = savingDisabled;
 		mScoreboardCleanupEnabled = scoreboardCleanupEnabled;
 		INSTANCE = this;
+
+		logger.info("Configuration:");
+		logger.info("  redis_host = " + (mHost == null ? "null" : mHost));
+		logger.info("  redis_port = " + Integer.toString(mPort));
+		logger.info("  server_domain = " + (mDomain == null ? "null" : mDomain));
+		logger.info("  shard_name = " + (mShard == null ? "null" : mShard));
+		logger.info("  shard_data_name = " + (mShardDataName == null ? "null" : mShardDataName));
+		logger.info("  history_amount = " + Integer.toString(mHistory));
+		logger.info("  ticks_per_player_autosave = " + Integer.toString(mTicksPerPlayerAutosave));
+		logger.info("  saving_disabled = " + Boolean.toString(mSavingDisabled));
+		logger.info("  scoreboard_cleanup_enabled = " + Boolean.toString(mScoreboardCleanupEnabled));
 	}
 }
