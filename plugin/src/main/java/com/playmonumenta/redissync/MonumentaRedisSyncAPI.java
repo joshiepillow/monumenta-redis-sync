@@ -939,4 +939,14 @@ public class MonumentaRedisSyncAPI {
 			});
 		});
 	}
+
+	/**
+	 * If MonumentaNetworkRelay is installed, returns a list of all other shard names
+	 * that are currently up and valid transfer targets from this server.
+	 *
+	 * If MonumentaNetworkRelay is not installed, returns an empty array.
+	 */
+	public static String[] getOnlineTransferTargets() {
+		return NetworkRelayIntegration.getOnlineTransferTargets();
+	}
 }
