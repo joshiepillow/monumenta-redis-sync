@@ -119,7 +119,14 @@ public class MonumentaRedisSync extends JavaPlugin {
 		String host = config.getString("redis_host", "redis");
 		int port = config.getInt("redis_port", 6379);
 		String domain = config.getString("server_domain", "default_domain");
-		String shard = config.getString("shard_name", "default_shard");
+
+		/* Get default shard name from network relay if enabled */
+		String shard = NetworkRelayIntegration.getShardName();
+		if (shard == null) {
+			shard = "default_shard";
+		}
+		shard = config.getString("shard_name", shard);
+
 		int history = config.getInt("history_amount", 20);
 		int ticksPerPlayerAutosave = config.getInt("ticksPerPlayerAutosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);

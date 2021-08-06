@@ -127,4 +127,16 @@ public class NetworkRelayIntegration implements Listener {
 		MonumentaRedisSyncAPI.updateUuidToName(playerUuid, playerName);
 		MonumentaRedisSyncAPI.updateNameToUuid(playerName, playerUuid);
 	}
+
+	public static String getShardName() {
+		if (INSTANCE != null) {
+			try {
+				return NetworkRelayAPI.getShardName();
+			} catch (Exception ex) {
+				INSTANCE.mLogger.warning("NetworkRelayAPI.getShardName failed: " + ex.getMessage());
+				ex.printStackTrace();
+			}
+		}
+		return null;
+	}
 }
