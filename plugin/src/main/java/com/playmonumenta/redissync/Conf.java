@@ -7,6 +7,7 @@ public class Conf {
 	private final int mPort;
 	private final String mDomain;
 	private final String mShard;
+	private final String mShardDataName;
 	private final int mHistory;
 	private final int mTicksPerPlayerAutosave;
 	private final boolean mSavingDisabled;
@@ -28,6 +29,10 @@ public class Conf {
 		return INSTANCE.mShard;
 	}
 
+	protected static String getShardDataName() {
+		return INSTANCE.mShardDataName;
+	}
+
 	protected static int getHistory() {
 		return INSTANCE.mHistory;
 	}
@@ -44,11 +49,12 @@ public class Conf {
 		return INSTANCE.mScoreboardCleanupEnabled;
 	}
 
-	protected Conf(String host, int port, String domain, String shard, int history, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
+	protected Conf(String host, int port, String domain, String shard, String shardDataName, int history, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;
 		mShard = shard;
+		mShardDataName = shardDataName;
 		mHistory = history;
 		mTicksPerPlayerAutosave = ticksPerPlayerAutosave;
 		mSavingDisabled = savingDisabled;

@@ -66,7 +66,7 @@ public class MonumentaRedisSyncBungee extends Plugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new Conf(host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new Conf(host, port, domain, shard, null, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
 	}
 
 	public void setLogLevel(Level level) {

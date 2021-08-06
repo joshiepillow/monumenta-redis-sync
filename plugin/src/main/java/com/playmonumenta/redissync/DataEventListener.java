@@ -360,7 +360,7 @@ public class DataEventListener implements Listener {
 		blockingWaitForPlayerToSave(player);
 
 		RedisFuture<byte[]> dataFuture = RedisAPI.getInstance().asyncStringBytes().lindex(MonumentaRedisSyncAPI.getRedisDataPath(player), 0);
-		RedisFuture<String> shardDataFuture = RedisAPI.getInstance().async().hget(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShard());
+		RedisFuture<String> shardDataFuture = RedisAPI.getInstance().async().hget(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShardDataName());
 		RedisFuture<String> pluginDataFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisPluginDataPath(player), 0);
 
 		try {
@@ -465,7 +465,7 @@ public class DataEventListener implements Listener {
 			/* sharddata */
 			mLogger.finest(() -> "sharddata: " + data.getShardData());
 			String shardDataPath = MonumentaRedisSyncAPI.getRedisPerShardDataPath(player);
-			commands.hset(shardDataPath, Conf.getShard(), data.getShardData());
+			commands.hset(shardDataPath, Conf.getShardDataName(), data.getShardData());
 
 			/* history */
 			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);

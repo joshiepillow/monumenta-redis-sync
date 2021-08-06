@@ -14,6 +14,8 @@ import com.playmonumenta.redissync.commands.Stash;
 import com.playmonumenta.redissync.commands.TransferServer;
 import com.playmonumenta.redissync.commands.UpgradeAllPlayers;
 
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -127,6 +129,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 		}
 		shard = config.getString("shard_name", shard);
 
+		World defaultWorld = Bukkit.getWorlds().get(0);
+		String shardDataName = config.getString("shard_data_name", defaultWorld.getUID().toString() + ":" + defaultWorld.getName());
+
 		int history = config.getInt("history_amount", 20);
 		int ticksPerPlayerAutosave = config.getInt("ticksPerPlayerAutosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
@@ -147,7 +152,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new Conf(host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new Conf(host, port, domain, shard, shardDataName, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
 	}
 
 	public void setLogLevel(Level level) {
