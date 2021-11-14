@@ -259,7 +259,6 @@ public class DataEventListener implements Listener {
 		blockingWaitForPlayerToSave(player);
 
 		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisAdvancementsPath(player), 0);
-		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
 
 		try {
 			/* Advancements */
@@ -272,24 +271,9 @@ public class DataEventListener implements Listener {
 				mLogger.warning("No advancements data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			}
 
-			/* Scoreboards */
-			final String scoreData = scoreFuture.get();
-			mLogger.fine("Scoreboard data loaded for player=" + player.getName());
-			mLogger.finest(() -> "Score data:" + scoreData);
-			if (scoreData != null) {
-				JsonObject obj = mGson.fromJson(scoreData, JsonObject.class);
-				if (obj != null) {
-					ScoreboardUtils.loadFromJsonObject(player, obj);
-				} else {
-					mLogger.severe("Failed to parse player '" + player.getName() + "' scoreboard data as JSON. This results in data loss!");
-				}
-			} else {
-				mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
-			}
-
 			mLogger.fine(() -> "Processing PlayerAdvancementDataLoadEvent took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 		} catch (InterruptedException | ExecutionException ex) {
-			mLogger.severe("Failed to get advancements/scores data for player '" + player.getName() + "'. This is very bad!");
+			mLogger.severe("Failed to get advancements data for player '" + player.getName() + "'. This is very bad!");
 			ex.printStackTrace();
 		}
 	}
@@ -317,7 +301,7 @@ public class DataEventListener implements Listener {
 			futures.removeIf(future -> future.isDone());
 		}
 
-		/* Execute the advancements and scoreboards as a multi() batch */
+		/* Execute the advancements as a multi() batch */
 		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		futures.add(commands.multi()); /* < MULTI */
 
@@ -327,16 +311,6 @@ public class DataEventListener implements Listener {
 		String advPath = MonumentaRedisSyncAPI.getRedisAdvancementsPath(player);
 		commands.lpush(advPath, event.getJsonData());
 		commands.ltrim(advPath, 0, Conf.getHistory());
-
-		/* Scoreboards */
-		mLogger.fine("Saving scoreboard data for player=" + player.getName());
-		long startTime = System.currentTimeMillis();
-		String data = mGson.toJson(mAdapter.getPlayerScoresAsJson(player.getName(), Bukkit.getScoreboardManager().getMainScoreboard()));
-		mLogger.fine(() -> "Scoreboard saving took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
-		mLogger.finest(() -> "Data:" + data);
-		String scorePath = MonumentaRedisSyncAPI.getRedisScoresPath(player);
-		commands.lpush(scorePath, data);
-		commands.ltrim(scorePath, 0, Conf.getHistory());
 
 		futures.add(commands.exec()); /* MULTI > */
 
@@ -362,6 +336,7 @@ public class DataEventListener implements Listener {
 		RedisFuture<byte[]> dataFuture = RedisAPI.getInstance().asyncStringBytes().lindex(MonumentaRedisSyncAPI.getRedisDataPath(player), 0);
 		RedisFuture<String> shardDataFuture = RedisAPI.getInstance().async().hget(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShardDataName());
 		RedisFuture<String> pluginDataFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisPluginDataPath(player), 0);
+		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
 
 		try {
 			/* Load the primary shared NBT data */
@@ -391,6 +366,21 @@ public class DataEventListener implements Listener {
 				mPluginData.put(player.getUniqueId(), mGson.fromJson(pluginData, JsonObject.class));
 				mLogger.finer("Plugin data loaded for player=" + player.getName());
 				mLogger.finest(() -> "Plugin data: " + pluginData);
+			}
+
+			/* Load scoreboards */
+			final String scoreData = scoreFuture.get();
+			mLogger.fine("Scoreboard data loaded for player=" + player.getName());
+			mLogger.finest(() -> "Score data:" + scoreData);
+			if (scoreData != null) {
+				JsonObject obj = mGson.fromJson(scoreData, JsonObject.class);
+				if (obj != null) {
+					ScoreboardUtils.loadFromJsonObject(player, obj);
+				} else {
+					mLogger.severe("Failed to parse player '" + player.getName() + "' scoreboard data as JSON. This results in data loss!");
+				}
+			} else {
+				mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			}
 
 			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardData);
@@ -480,6 +470,16 @@ public class DataEventListener implements Listener {
 			mLogger.finest(() -> "plugindata: " + pluginDataStr);
 			commands.lpush(pluginDataPath, pluginDataStr);
 			commands.ltrim(pluginDataPath, 0, Conf.getHistory());
+
+			/* Scoreboards */
+			mLogger.fine("Saving scoreboard data for player=" + player.getName());
+			long scoreStartTime = System.currentTimeMillis();
+			String scoreboardData = mGson.toJson(mAdapter.getPlayerScoresAsJson(player.getName(), Bukkit.getScoreboardManager().getMainScoreboard()));
+			mLogger.fine(() -> "Scoreboard saving took " + Long.toString(System.currentTimeMillis() - scoreStartTime) + " milliseconds on main thread");
+			mLogger.finest(() -> "Data:" + scoreboardData);
+			String scorePath = MonumentaRedisSyncAPI.getRedisScoresPath(player);
+			commands.lpush(scorePath, scoreboardData);
+			commands.ltrim(scorePath, 0, Conf.getHistory());
 
 			futures.add(commands.exec()); /* MULTI > */
 		} catch (IOException ex) {
