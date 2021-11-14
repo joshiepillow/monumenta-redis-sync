@@ -542,6 +542,78 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
+	/**
+	 * Gets a specific remote data entry for a player
+	 *
+	 * @return null if no entry was present, String otherwise
+	 */
+	public static CompletableFuture<String> getRemoteData(UUID uuid, String key) throws Exception {
+		RedisAPI api = RedisAPI.getInstance();
+		if (api == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		return api.async().hget(getRedisRemoteDataPath(uuid), key).toCompletableFuture();
+	}
+
+	/**
+	 * Sets a specific remote data entry for a player
+	 *
+	 * @return True if an entry was set, False otherwise
+	 */
+	public static CompletableFuture<Boolean> setRemoteData(UUID uuid, String key, String value) throws Exception {
+		RedisAPI api = RedisAPI.getInstance();
+		if (api == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		return api.async().hset(getRedisRemoteDataPath(uuid), key, value).toCompletableFuture();
+	}
+
+	/**
+	 * Atomically increments a specific remote data entry for a player
+	 *
+	 * Note that this will interpret the hash value as an integer (default 0 if not existing)
+	 *
+	 * @return Resulting value
+	 */
+	public static CompletableFuture<Long> incrementRemoteData(UUID uuid, String key, int incby) throws Exception {
+		RedisAPI api = RedisAPI.getInstance();
+		if (api == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		return api.async().hincrby(getRedisRemoteDataPath(uuid), key, incby).toCompletableFuture();
+	}
+
+	/**
+	 * Deletes a specific key in the player's remote data.
+	 *
+	 * @return True if an entry was present and was deleted, False if no entry was present to begin with
+	 */
+	public static CompletableFuture<Boolean> delRemoteData(UUID uuid, String key) throws Exception {
+		RedisAPI api = RedisAPI.getInstance();
+		if (api == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		return api.async().hdel(getRedisRemoteDataPath(uuid), key).thenApply((val) -> val == 1).toCompletableFuture();
+	}
+
+	/**
+	 * Gets a map of all remote data for a player
+	 *
+	 * @return Non-null map of keys:values. If no data, will return an empty map
+	 */
+	public static CompletableFuture<Map<String, String>> getAllRemoteData(UUID uuid) throws Exception {
+		RedisAPI api = RedisAPI.getInstance();
+		if (api == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		return api.async().hgetall(getRedisRemoteDataPath(uuid)).toCompletableFuture();
+	}
+
 	@Nonnull
 	public static String getRedisDataPath(@Nonnull Player player) {
 		return getRedisDataPath(player.getUniqueId());
@@ -600,6 +672,16 @@ public class MonumentaRedisSyncAPI {
 	@Nonnull
 	public static String getRedisScoresPath(@Nonnull UUID uuid) {
 		return String.format("%s:playerdata:%s:scores", Conf.getDomain(), uuid.toString());
+	}
+
+	@Nonnull
+	public static String getRedisRemoteDataPath(@Nonnull Player player) {
+		return getRedisRemoteDataPath(player.getUniqueId());
+	}
+
+	@Nonnull
+	public static String getRedisRemoteDataPath(@Nonnull UUID uuid) {
+		return String.format("%s:remotedata:%s:plugins", Conf.getDomain(), uuid.toString());
 	}
 
 	@Nonnull
