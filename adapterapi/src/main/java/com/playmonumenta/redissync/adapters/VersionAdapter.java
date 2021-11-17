@@ -43,7 +43,7 @@ public interface VersionAdapter {
 
 	void resetPlayerScores(String playerName, Scoreboard scoreboard);
 
-	Object retrieveSaveData(byte[] data, String shardData) throws IOException;
+	Object retrieveSaveData(byte[] data, JsonObject shardData) throws IOException;
 
 	SaveData extractSaveData(Object nbtObj, ReturnParams returnParams) throws IOException;
 

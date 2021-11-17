@@ -20,7 +20,6 @@ import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_16_R3.CraftServer;
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_16_R3.scoreboard.CraftScoreboard;
@@ -44,7 +43,6 @@ import net.minecraft.server.v1_16_R3.SharedConstants;
 public class VersionAdapter_v1_16_R3 implements VersionAdapter {
 	private static Gson advancementsGson = null;
 
-	private Gson mGson = new Gson();
 	private Method mSaveMethod = null;
 	private final Logger mLogger;
 
@@ -87,36 +85,28 @@ public class VersionAdapter_v1_16_R3 implements VersionAdapter {
 		nmsScoreboard.resetPlayerScores(playerName, null);
 	}
 
-	public Object retrieveSaveData(byte[] data, String shardData) throws IOException {
-
+	public Object retrieveSaveData(byte[] data, JsonObject shardData) throws IOException {
 		ByteArrayInputStream inBytes = new ByteArrayInputStream(data);
 		NBTTagCompound nbt = NBTCompressedStreamTools.a(inBytes);
 
-		if (shardData == null) {
-			/* If player has never been to this shard, put them at world spawn */
-			Location spawn = Bukkit.getWorlds().get(0).getSpawnLocation();
-			nbt.set("Pos", toDoubleList(spawn.getX(), spawn.getY(), spawn.getZ()));
-		} else {
-			JsonObject obj = mGson.fromJson(shardData, JsonObject.class);
-			applyInt(obj, nbt, "SpawnX");
-			applyInt(obj, nbt, "SpawnY");
-			applyInt(obj, nbt, "SpawnZ");
-			applyBool(obj, nbt, "SpawnForced");
-			applyFloat(obj, nbt, "SpawnAngle");
-			applyStr(obj, nbt, "SpawnDimension");
-			applyBool(obj, nbt, "FallFlying");
-			applyFloat(obj, nbt, "FallDistance");
-			applyBool(obj, nbt, "OnGround");
-			applyInt(obj, nbt, "Dimension");
-			applyStr(obj, nbt, "world");
-			applyLong(obj, nbt, "WorldUUIDMost");
-			applyLong(obj, nbt, "WorldUUIDLeast");
-			applyDoubleList(obj, nbt, "Pos");
-			applyDoubleList(obj, nbt, "Motion");
-			applyFloatList(obj, nbt, "Rotation");
-			applyDoubleList(obj, nbt, "Paper.Origin");
-			applyCompoundOfDoubles(obj, nbt, "enteredNetherPosition");
-		}
+		applyInt(shardData, nbt, "SpawnX");
+		applyInt(shardData, nbt, "SpawnY");
+		applyInt(shardData, nbt, "SpawnZ");
+		applyBool(shardData, nbt, "SpawnForced");
+		applyFloat(shardData, nbt, "SpawnAngle");
+		applyStr(shardData, nbt, "SpawnDimension");
+		applyBool(shardData, nbt, "FallFlying");
+		applyFloat(shardData, nbt, "FallDistance");
+		applyBool(shardData, nbt, "OnGround");
+		applyInt(shardData, nbt, "Dimension");
+		applyStr(shardData, nbt, "world");
+		applyLong(shardData, nbt, "WorldUUIDMost");
+		applyLong(shardData, nbt, "WorldUUIDLeast");
+		applyDoubleList(shardData, nbt, "Pos");
+		applyDoubleList(shardData, nbt, "Motion");
+		applyFloatList(shardData, nbt, "Rotation");
+		applyDoubleList(shardData, nbt, "Paper.Origin");
+		applyCompoundOfDoubles(shardData, nbt, "enteredNetherPosition");
 
 		return nbt;
 	}

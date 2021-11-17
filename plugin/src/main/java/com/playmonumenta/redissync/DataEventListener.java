@@ -21,16 +21,19 @@ import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
 import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
 import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
+import com.playmonumenta.redissync.event.PlayerJoinSetWorldEvent;
 import com.playmonumenta.redissync.event.PlayerSaveEvent;
 import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -383,7 +386,68 @@ public class DataEventListener implements Listener {
 				mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			}
 
-			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardData);
+			/* Figure out what world the player's sharddata indicates they should join
+			 * If shard data with a uuid, use it
+			 * If shard data with a name, use it next
+			 * Otherwise, default world
+			 */
+			World playerWorld = null; // If null at the end of this block, will use default world
+			if (shardData != null) {
+				JsonObject shardDataJson = mGson.fromJson(shardData, JsonObject.class);
+
+				if (shardDataJson.has("WorldUUIDMost") && shardDataJson.has("WorldUUIDLeast")) {
+					UUID uuid = new UUID(shardDataJson.get("WorldUUIDMost").getAsLong(), shardDataJson.get("WorldUUIDLeast").getAsLong());
+					World world = Bukkit.getWorld(uuid);
+					if (world != null) {
+						playerWorld = world;
+					}
+				}
+
+				if (playerWorld == null) {
+					if (shardDataJson.has("world")) {
+						World world = Bukkit.getWorld(shardDataJson.get("world").getAsString());
+						if (world != null) {
+							playerWorld = world;
+						}
+					}
+				}
+			}
+			if (playerWorld == null) {
+				playerWorld = Bukkit.getWorlds().get(0);
+			}
+
+			// Throw an event that lets other plugins modify the join world
+			PlayerJoinSetWorldEvent worldEvent = new PlayerJoinSetWorldEvent(player, playerWorld);
+			Bukkit.getPluginManager().callEvent(worldEvent);
+
+			final JsonObject shardDataJson;
+			if (shardData == null || shardData.isEmpty())  {
+				shardDataJson = new JsonObject();
+			} else {
+				shardDataJson = mGson.fromJson(shardData, JsonObject.class);
+			}
+
+			if (!shardDataJson.has("Pos")) {
+				// No position data, put player at world spawn
+				Location spawn = playerWorld.getSpawnLocation();
+
+				JsonArray pos = new JsonArray();
+				pos.add(spawn.getX());
+				pos.add(spawn.getY());
+				pos.add(spawn.getZ());
+				shardDataJson.add("Pos", pos);
+
+				JsonArray rotation = new JsonArray();
+				rotation.add(spawn.getYaw());
+				rotation.add(spawn.getPitch());
+				shardDataJson.add("Rotation", rotation);
+			}
+
+			shardDataJson.addProperty("world", playerWorld.getName());
+			shardDataJson.addProperty("WorldUUIDMost", playerWorld.getUID().getMostSignificantBits());
+			shardDataJson.addProperty("WorldUUIDLeast", playerWorld.getUID().getLeastSignificantBits());
+
+			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardDataJson);
 			event.setData(nbtTagCompound);
 
 			mLogger.fine(() -> "Processing PlayerDataLoadEvent took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
