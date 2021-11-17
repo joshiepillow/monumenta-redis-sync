@@ -443,9 +443,9 @@ public class DataEventListener implements Listener {
 				shardDataJson.add("Rotation", rotation);
 			}
 
-			shardDataJson.addProperty("world", playerWorld.getName());
-			shardDataJson.addProperty("WorldUUIDMost", playerWorld.getUID().getMostSignificantBits());
-			shardDataJson.addProperty("WorldUUIDLeast", playerWorld.getUID().getLeastSignificantBits());
+			shardDataJson.addProperty("world", worldEvent.getWorld().getName());
+			shardDataJson.addProperty("WorldUUIDMost", worldEvent.getWorld().getUID().getMostSignificantBits());
+			shardDataJson.addProperty("WorldUUIDLeast", worldEvent.getWorld().getUID().getLeastSignificantBits());
 
 			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardDataJson);
 			event.setData(nbtTagCompound);
