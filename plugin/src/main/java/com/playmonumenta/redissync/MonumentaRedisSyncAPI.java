@@ -2,6 +2,7 @@ package com.playmonumenta.redissync;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
@@ -31,6 +33,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
 
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
@@ -757,20 +761,14 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	/**
-	 * Loads player plugin data asynchronously, and calls the provided callback function when the request completes
+	 * Gets player plugin data from the cache.
 	 *
-	 * Note that it may take up to several seconds to service the request, depending on the latency of the connection to the redis database
-	 * This function will not block and will return very quickly, suitable for use on the main thread.
+	 * Only valid if the player is currently on this shard.
 	 *
 	 * @param uuid              Player's UUID to get data for
 	 * @param pluginIdentifier  A unique string key identifying which plugin data to get for this player
-	 * @param plugin			An enabled plugin handle to schedule Bukkit tasks under
-	 * @param Consumer			A function to call with the data when it has finished loading.
 	 *
-	 * @return
-	 *     If data loading is successful and data was retrieved, consumer will be called with (String, null)
-	 *     If redis request was successful but there was no data to load, consumer will be called with (null, null)
-	 *     If the redis request failed, consumer will be called with (null, Exception)
+	 * @return plugin data for this identifier (or null if it doesn't exist or player isn't online)
 	 */
 	public static @Nullable JsonObject getPlayerPluginData(@Nonnull UUID uuid, @Nonnull String pluginIdentifier) {
 		JsonObject pluginData = DataEventListener.getPlayerPluginData(uuid);
@@ -876,6 +874,56 @@ public class MonumentaRedisSyncAPI {
 		commands.lindex(MonumentaRedisSyncAPI.getRedisHistoryPath(uuid), 0);
 
 		return commands.exec().thenApply((TransactionResult result) -> transformPlayerData(mrs, uuid, result)).toCompletableFuture();
+	}
+
+	/**
+	 * Gets a map of all player scoreboard values.
+	 *
+	 * If player is online, will pull them from the current scoreboard. This work will be done on the main thread (will take several milliseconds).
+	 * If player is offline, will pull them from the most recent redis save on an async thread, then compose them into a map (basically no main thread time)
+	 *
+	 * The return future will always complete on the main thread with either results or an exception.
+	 * Suggest chaining on .whenComplete((data, ex) -> your code) to do something with this data when complete
+	 */
+	@Nonnull
+	public static CompletableFuture<Map<String, Integer>> getPlayerScores(@Nonnull UUID uuid) {
+		CompletableFuture<Map<String, Integer>> future = new CompletableFuture<>();
+
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			future.completeExceptionally(new Exception("MonumentaRedisSync invoked but is not loaded"));
+			return future;
+		}
+
+		Player player = Bukkit.getPlayer(uuid);
+		if (player != null) {
+			Map<String, Integer> scores = new HashMap<>();
+			for (Objective objective : Bukkit.getScoreboardManager().getMainScoreboard().getObjectives()) {
+				Score score = objective.getScore(player.getName());
+				if (score != null) {
+					scores.put(objective.getName(), score.getScore());
+				}
+			}
+			future.complete(scores);
+			return future;
+		}
+
+		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+
+		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid), 0)
+			.thenApply(
+				(scoreData) -> (new Gson()).fromJson(scoreData, JsonObject.class).entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> entry.getValue().getAsInt())))
+			.whenComplete((scoreMap, ex) -> {
+				Bukkit.getScheduler().runTask(mrs, () -> {
+					if (ex != null) {
+						future.completeExceptionally(ex);
+					} else {
+						future.complete(scoreMap);
+					}
+				});
+			});
+
+		return future;
 	}
 
 	@Nonnull
