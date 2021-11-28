@@ -685,7 +685,7 @@ public class MonumentaRedisSyncAPI {
 
 	@Nonnull
 	public static String getRedisRemoteDataPath(@Nonnull UUID uuid) {
-		return String.format("%s:remotedata:%s:plugins", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:remotedata", Conf.getDomain(), uuid.toString());
 	}
 
 	@Nonnull
