@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
@@ -36,6 +37,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
+import org.bukkit.util.Vector;
 
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
@@ -794,6 +796,142 @@ public class MonumentaRedisSyncAPI {
 		}
 
 		return pluginDataElement.getAsJsonObject();
+	}
+
+	public static class PlayerWorldData {
+		// Other sharddata fields that are not returned here: {"SpawnDimension":"minecraft:overworld","Dimension":0,"Paper.Origin":[-1450.0,241.0,-1498.0]}"}
+		// Note: This list might be out of date
+
+		private final @Nonnull Location mSpawnLoc; // {"SpawnX":-1450,"SpawnY":241,"SpawnZ":-1498,"SpawnAngle":0.0}
+		private final @Nonnull Location mPlayerLoc; // {"Pos":[-1280.5,95.0,5369.7001953125],"Rotation":[-358.9,2.1]}
+		private final @Nonnull Vector mMotion; // {"Motion":[0.0,-0.0784000015258789,0.0]}
+		private final @Nonnull boolean mSpawnForced; // {"SpawnForced":true}
+		private final @Nonnull boolean mFallFlying; // {"FallFlying":false}
+		private final @Nonnull float mFallDistance; // {"FallDistance":0.0}
+		private final @Nonnull boolean mOnGround; // {"OnGround":true}
+
+		private PlayerWorldData(Location spawnLoc, Location playerLoc, Vector motion, boolean spawnForced, boolean fallFlying, float fallDistance, boolean onGround) {
+			mSpawnLoc = spawnLoc;
+			mPlayerLoc = playerLoc;
+			mMotion = motion;
+			mSpawnForced = spawnForced;
+			mFallFlying = fallFlying;
+			mFallDistance = fallDistance;
+			mOnGround = onGround;
+		}
+
+		public Location getSpawnLoc() {
+			return mSpawnLoc;
+		}
+
+		public Location getPlayerLoc() {
+			return mPlayerLoc;
+		}
+
+		public Vector getMotion() {
+			return mMotion;
+		}
+
+		public boolean getFallFlying() {
+			return mFallFlying;
+		}
+
+		public double getFallDistance() {
+			return mFallDistance;
+		}
+
+		public boolean getOnGround() {
+			return mOnGround;
+		}
+
+		public void applyToPlayer(Player player) {
+			player.teleport(mPlayerLoc);
+			player.setVelocity(mMotion);
+			player.setFlying(mFallFlying);
+			player.setFallDistance(mFallDistance);
+			player.setBedSpawnLocation(mSpawnLoc, mSpawnForced);
+		}
+
+		private static @Nonnull PlayerWorldData fromJson(@Nullable String jsonStr, @Nonnull World world) {
+			// Defaults to world spawn
+			Location spawnLoc = world.getSpawnLocation();
+			Location playerLoc = spawnLoc.clone();
+			Vector motion = new Vector(0, 0, 0);
+			boolean spawnForced = true;
+			boolean fallFlying = false;
+			float fallDistance = 0;
+			boolean onGround = true;
+
+			if (jsonStr != null && !jsonStr.isEmpty()) {
+				try {
+					JsonObject obj = (new Gson()).fromJson(jsonStr, JsonObject.class);
+					if (obj.has("SpawnX")) {
+						spawnLoc.setX(obj.get("SpawnX").getAsDouble());
+					}
+					if (obj.has("SpawnY")) {
+						spawnLoc.setY(obj.get("SpawnY").getAsDouble());
+					}
+					if (obj.has("SpawnZ")) {
+						spawnLoc.setZ(obj.get("SpawnZ").getAsDouble());
+					}
+					if (obj.has("Pos")) {
+						JsonArray arr = obj.get("Pos").getAsJsonArray();
+						playerLoc.setX(arr.get(0).getAsDouble());
+						playerLoc.setY(arr.get(1).getAsDouble());
+						playerLoc.setZ(arr.get(2).getAsDouble());
+					}
+					if (obj.has("Rotation")) {
+						JsonArray arr = obj.get("Rotation").getAsJsonArray();
+						playerLoc.setYaw(arr.get(0).getAsFloat());
+						playerLoc.setPitch(arr.get(1).getAsFloat());
+					}
+					if (obj.has("Motion")) {
+						JsonArray arr = obj.get("Motion").getAsJsonArray();
+						motion = new Vector(arr.get(0).getAsDouble(), arr.get(1).getAsDouble(), arr.get(2).getAsDouble());
+					}
+					if (obj.has("SpawnForced")) {
+						spawnForced = obj.get("SpawnForced").getAsBoolean();
+					}
+					if (obj.has("FallFlying")) {
+						fallFlying = obj.get("FallFlying").getAsBoolean();
+					}
+					if (obj.has("FallDistance")) {
+						fallDistance = obj.get("FallDistance").getAsFloat();
+					}
+					if (obj.has("OnGround")) {
+						onGround = obj.get("OnGround").getAsBoolean();
+					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+
+			return new PlayerWorldData(spawnLoc, playerLoc, motion, spawnForced, fallFlying, fallDistance, onGround);
+		}
+	}
+
+	/**
+	 * Gets player location data for a world
+	 *
+	 * Only valid if the player is currently on this shard.
+	 *
+	 * @param player  Player's to get data for
+	 * @param world	  World to get data for
+	 *
+	 * @return plugin data for this identifier (or null if it doesn't exist or player isn't online)
+	 */
+	public static @Nonnull PlayerWorldData getPlayerWorldData(@Nonnull Player player, @Nonnull World world) {
+		Map<String, String> shardData = DataEventListener.getPlayerShardData(player.getUniqueId());
+		if (shardData == null || shardData.isEmpty()) {
+			return PlayerWorldData.fromJson(null, world);
+		}
+
+		String worldShardData = shardData.get(getRedisPerShardDataWorldKey(world));
+		if (worldShardData == null || worldShardData.isEmpty()) {
+			return PlayerWorldData.fromJson(null, world);
+		}
+
+		return PlayerWorldData.fromJson(worldShardData, world);
 	}
 
 	/**

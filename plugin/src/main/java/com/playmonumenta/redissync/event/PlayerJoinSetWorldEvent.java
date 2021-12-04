@@ -16,6 +16,7 @@ import org.bukkit.event.player.PlayerEvent;
  * This is useful to change the player's world seamlessly without them ever seeing a flash of a different world on join.
  *
  * Note that at the time this event is called, the player's scores are available but all player data is blank, including inventory and tags.
+ * The API MonumentaRedisSyncAPI.getPlayerWorldData() is also available at this point
  */
 public class PlayerJoinSetWorldEvent extends PlayerEvent {
 

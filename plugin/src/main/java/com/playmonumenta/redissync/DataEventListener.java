@@ -117,6 +117,12 @@ public class DataEventListener implements Listener {
 	private final Map<UUID, List<RedisFuture<?>>> mPendingSaves = new HashMap<>();
 	private final Map<UUID, JsonObject> mPluginData = new HashMap<>();
 
+	/*
+	 * Cached local copy of shard data to provide to API to get player locations on other worlds
+	 * Every player that has fully logged into this shard is guaranteed to have an entry in this map
+	 */
+	private final Map<UUID, Map<String, String>> mShardData = new HashMap<>();
+
 	protected DataEventListener(Logger logger, VersionAdapter adapter) {
 		mLogger = logger;
 		mAdapter = adapter;
@@ -195,6 +201,10 @@ public class DataEventListener implements Listener {
 
 	protected static @Nullable JsonObject getPlayerPluginData(UUID uuid) {
 		return INSTANCE.mPluginData.get(uuid);
+	}
+
+	protected static @Nullable Map<String, String> getPlayerShardData(UUID uuid) {
+		return INSTANCE.mShardData.get(uuid);
 	}
 
 	private void waitForPlayerToSaveInternal(Player player, Runnable callback, boolean sync) {
@@ -386,9 +396,15 @@ public class DataEventListener implements Listener {
 			UUID lastSavedWorldUUID = null; // The saved world UUID from shard data. Might be different from the playerWorld if save data indicated one world but it is not loaded so fell back to the default
 			String lastSavedWorldName = null; // The saved world name from shard data. Might be different from the playerWorld if save data indicated one world but it is not loaded so fell back to the default
 			if (shardData == null) {
+				/* Maintain a local cache of shard data while the player is logged in here */
+				mShardData.put(player.getUniqueId(), new HashMap<>());
+
 				/* This is not an error - this will happen whenever a player first joins the game */
 				mLogger.fine("Player '" + player.getName() + "' has never been to any shard before");
 			} else {
+				/* Maintain a local cache of shard data while the player is logged in here */
+				mShardData.put(player.getUniqueId(), shardData);
+
 				mLogger.finer("Shard data loaded for player=" + player.getName());
 				mLogger.finest(() -> "Shard data: " + mGson.toJson(shardData));
 
@@ -420,7 +436,7 @@ public class DataEventListener implements Listener {
 						lastSavedWorldName = shardDataJson.get("World").getAsString();
 					}
 
-					if (playerWorld == null) {
+					if (playerWorld == null && lastSavedWorldName != null) {
 						World world = Bukkit.getWorld(lastSavedWorldName);
 						if (world != null) {
 							playerWorld = world;
@@ -560,6 +576,13 @@ public class DataEventListener implements Listener {
 			// Save the data specifically for the world the player is currently on
 			String worldKey = MonumentaRedisSyncAPI.getRedisPerShardDataWorldKey(player.getWorld());
 			commands.hset(shardDataPath, worldKey, data.getShardData());
+			// Also update the local sharddata cache
+			Map<String, String> shardDataMap = mShardData.get(player.getUniqueId());
+			if (shardDataMap == null) {
+				mLogger.warning("BUG! There was no player entry in the mShardData map for uuid=" + player.getUniqueId() + " name=" + player.getName() + ". This is not a fatal error, but player locations are likely wrong in some corner cases...");
+			} else {
+				shardDataMap.put(worldKey, data.getShardData());
+			}
 			mLogger.finest("sharddata (world): " + worldKey + "=" + data.getShardData());
 
 			// Save the data for this shard indicating which world the player is currently on
@@ -568,6 +591,9 @@ public class DataEventListener implements Listener {
 			overallShardData.addProperty("World", player.getWorld().getName());
 			String overallShardDataStr = mGson.toJson(overallShardData);
 			commands.hset(shardDataPath, Conf.getShard(), overallShardDataStr);
+			if (shardDataMap != null) {
+				shardDataMap.put(Conf.getShard(), overallShardDataStr);
+			}
 			mLogger.finest("sharddata (overall): " + Conf.getShard() + "=" + overallShardDataStr);
 
 			/* history */
@@ -579,6 +605,7 @@ public class DataEventListener implements Listener {
 
 			/* plugindata */
 			String pluginDataPath = MonumentaRedisSyncAPI.getRedisPluginDataPath(player);
+			mPluginData.put(player.getUniqueId(), pluginData); // Update cache
 			String pluginDataStr = mGson.toJson(pluginData);
 			mLogger.finest(() -> "plugindata: " + pluginDataStr);
 			commands.lpush(pluginDataPath, pluginDataStr);
@@ -646,6 +673,7 @@ public class DataEventListener implements Listener {
 				}
 
 				mPluginData.remove(playerUUID);
+				mShardData.remove(playerUUID);
 			}
 		}, 50);
 	}
