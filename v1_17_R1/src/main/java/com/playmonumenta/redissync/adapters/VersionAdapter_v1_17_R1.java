@@ -95,6 +95,17 @@ public class VersionAdapter_v1_17_R1 implements VersionAdapter {
 		applyBool(shardData, nbt, "SpawnForced");
 		applyFloat(shardData, nbt, "SpawnAngle");
 		applyStr(shardData, nbt, "SpawnDimension");
+		// flying is nested in the abilities structure
+		if (shardData.has("flying")) {
+			final NBTTagCompound abilities;
+			if (nbt.hasKey("abilities")) {
+				abilities = nbt.getCompound("abilities");
+			} else {
+				abilities = new NBTTagCompound();
+				nbt.set("abilities", abilities);
+			}
+			abilities.setBoolean("flying", shardData.get("flying").getAsBoolean());
+		}
 		applyBool(shardData, nbt, "FallFlying");
 		applyFloat(shardData, nbt, "FallDistance");
 		applyBool(shardData, nbt, "OnGround");
@@ -121,6 +132,11 @@ public class VersionAdapter_v1_17_R1 implements VersionAdapter {
 		copyBool(obj, nbt, "SpawnForced");
 		copyFloat(obj, nbt, "SpawnAngle");
 		copyStr(obj, nbt, "SpawnDimension");
+		// flying is nested in the abilities structure
+		if (nbt.hasKey("abilities")) {
+			NBTTagCompound abilities = nbt.getCompound("abilities");
+			copyBool(obj, abilities, "flying");
+		}
 		copyBool(obj, nbt, "FallFlying");
 		copyFloat(obj, nbt, "FallDistance");
 		copyBool(obj, nbt, "OnGround");

@@ -806,15 +806,17 @@ public class MonumentaRedisSyncAPI {
 		private final @Nonnull Location mPlayerLoc; // {"Pos":[-1280.5,95.0,5369.7001953125],"Rotation":[-358.9,2.1]}
 		private final @Nonnull Vector mMotion; // {"Motion":[0.0,-0.0784000015258789,0.0]}
 		private final @Nonnull boolean mSpawnForced; // {"SpawnForced":true}
+		private final @Nonnull boolean mFlying; // {"flying":false}
 		private final @Nonnull boolean mFallFlying; // {"FallFlying":false}
 		private final @Nonnull float mFallDistance; // {"FallDistance":0.0}
 		private final @Nonnull boolean mOnGround; // {"OnGround":true}
 
-		private PlayerWorldData(Location spawnLoc, Location playerLoc, Vector motion, boolean spawnForced, boolean fallFlying, float fallDistance, boolean onGround) {
+		private PlayerWorldData(Location spawnLoc, Location playerLoc, Vector motion, boolean spawnForced, boolean flying, boolean fallFlying, float fallDistance, boolean onGround) {
 			mSpawnLoc = spawnLoc;
 			mPlayerLoc = playerLoc;
 			mMotion = motion;
 			mSpawnForced = spawnForced;
+			mFlying = flying;
 			mFallFlying = fallFlying;
 			mFallDistance = fallDistance;
 			mOnGround = onGround;
@@ -847,7 +849,8 @@ public class MonumentaRedisSyncAPI {
 		public void applyToPlayer(Player player) {
 			player.teleport(mPlayerLoc);
 			player.setVelocity(mMotion);
-			player.setFlying(mFallFlying);
+			player.setFlying(mFlying);
+			player.setGliding(mFallFlying);
 			player.setFallDistance(mFallDistance);
 			player.setBedSpawnLocation(mSpawnLoc, mSpawnForced);
 		}
@@ -858,6 +861,7 @@ public class MonumentaRedisSyncAPI {
 			Location playerLoc = spawnLoc.clone();
 			Vector motion = new Vector(0, 0, 0);
 			boolean spawnForced = true;
+			boolean flying = false;
 			boolean fallFlying = false;
 			float fallDistance = 0;
 			boolean onGround = true;
@@ -892,6 +896,9 @@ public class MonumentaRedisSyncAPI {
 					if (obj.has("SpawnForced")) {
 						spawnForced = obj.get("SpawnForced").getAsBoolean();
 					}
+					if (obj.has("flying")) {
+						flying = obj.get("flying").getAsBoolean();
+					}
 					if (obj.has("FallFlying")) {
 						fallFlying = obj.get("FallFlying").getAsBoolean();
 					}
@@ -906,7 +913,7 @@ public class MonumentaRedisSyncAPI {
 				}
 			}
 
-			return new PlayerWorldData(spawnLoc, playerLoc, motion, spawnForced, fallFlying, fallDistance, onGround);
+			return new PlayerWorldData(spawnLoc, playerLoc, motion, spawnForced, flying, fallFlying, fallDistance, onGround);
 		}
 	}
 
