@@ -30,6 +30,7 @@ import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -647,6 +648,17 @@ public class MonumentaRedisSyncAPI {
 	public static String getRedisPerShardDataPath(@Nonnull UUID uuid) {
 		return String.format("%s:playerdata:%s:sharddata", Conf.getDomain(), uuid.toString());
 	}
+
+	@Nonnull
+	public static String getRedisPerShardDataWorldKey(@Nonnull World world) {
+		return getRedisPerShardDataWorldKey(world.getUID(), world.getName());
+	}
+
+	@Nonnull
+	public static String getRedisPerShardDataWorldKey(@Nonnull UUID worldUUID, @Nonnull String worldName) {
+		return worldUUID.toString() + ":" + worldName;
+	}
+
 
 	@Nonnull
 	public static String getRedisPluginDataPath(@Nonnull Player player) {

@@ -337,9 +337,12 @@ public class DataEventListener implements Listener {
 		blockingWaitForPlayerToSave(player);
 
 		RedisFuture<byte[]> dataFuture = RedisAPI.getInstance().asyncStringBytes().lindex(MonumentaRedisSyncAPI.getRedisDataPath(player), 0);
-		RedisFuture<String> shardDataFuture = RedisAPI.getInstance().async().hget(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player), Conf.getShardDataName());
-		RedisFuture<String> pluginDataFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisPluginDataPath(player), 0);
-		RedisFuture<String> scoreFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
+		commands.multi();
+		RedisFuture<String> pluginDataFuture = commands.lindex(MonumentaRedisSyncAPI.getRedisPluginDataPath(player), 0);
+		RedisFuture<String> scoreFuture = commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
+		RedisFuture<Map<String, String>> shardDataFuture = commands.hgetall(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player));
+		commands.exec();
 
 		try {
 			/* Load the primary shared NBT data */
@@ -350,16 +353,6 @@ public class DataEventListener implements Listener {
 			}
 			mLogger.finer("Player data loaded for player=" + player.getName());
 			mLogger.finest(() -> "Player data: " + b64encode(data));
-
-			/* Load per-shard data */
-			String shardData = shardDataFuture.get();
-			if (shardData == null) {
-				/* This is not an error - this will happen whenever a player first visits a new shard */
-				mLogger.fine("Player '" + player.getName() + "' has never been to this shard before");
-			} else {
-				mLogger.finer("Shard data loaded for player=" + player.getName());
-				mLogger.finest(() -> "Shard data: " + shardData);
-			}
 
 			/* Load plugin data */
 			String pluginData = pluginDataFuture.get();
@@ -386,46 +379,87 @@ public class DataEventListener implements Listener {
 				mLogger.warning("No scoreboard data for player '" + player.getName() + "' - if they are not new, this is a serious error!");
 			}
 
-			/* Figure out what world the player's sharddata indicates they should join
-			 * If shard data with a uuid, use it
-			 * If shard data with a name, use it next
-			 * Otherwise, default world
-			 */
+			/* Get all the shard data for all shards and worlds */
+			Map<String, String> shardData = shardDataFuture.get();
+			/* Look up in the shard data first the "overall" part - which world this player was on last time they were on this shard */
 			World playerWorld = null; // If null at the end of this block, will use default world
-			if (shardData != null) {
-				JsonObject shardDataJson = mGson.fromJson(shardData, JsonObject.class);
+			UUID lastSavedWorldUUID = null; // The saved world UUID from shard data. Might be different from the playerWorld if save data indicated one world but it is not loaded so fell back to the default
+			String lastSavedWorldName = null; // The saved world name from shard data. Might be different from the playerWorld if save data indicated one world but it is not loaded so fell back to the default
+			if (shardData == null) {
+				/* This is not an error - this will happen whenever a player first joins the game */
+				mLogger.fine("Player '" + player.getName() + "' has never been to any shard before");
+			} else {
+				mLogger.finer("Shard data loaded for player=" + player.getName());
+				mLogger.finest(() -> "Shard data: " + mGson.toJson(shardData));
 
-				if (shardDataJson.has("WorldUUIDMost") && shardDataJson.has("WorldUUIDLeast")) {
-					UUID uuid = new UUID(shardDataJson.get("WorldUUIDMost").getAsLong(), shardDataJson.get("WorldUUIDLeast").getAsLong());
-					World world = Bukkit.getWorld(uuid);
-					if (world != null) {
-						playerWorld = world;
+				/* Figure out what world the player's sharddata indicates they should join
+				 * If shard data does not contain this shard name, no info on what world to use - use the default one
+				 * If shard data contains this shard name, fetch world parameters from it, preferring UUID, then name. Loaded worlds only, this plugin does not load worlds automatically.
+				 */
+				String overallShardData = shardData.get(Conf.getShard());
+				if (overallShardData == null) {
+					/* This is not an error - this will happen whenever a player first visits a new shard */
+					mLogger.fine("Player '" + player.getName() + "' has never been to this shard before");
+				} else {
+					JsonObject shardDataJson = mGson.fromJson(overallShardData, JsonObject.class);
+
+					if (shardDataJson.has("WorldUUID")) {
+						try {
+							lastSavedWorldUUID = UUID.fromString(shardDataJson.get("WorldUUID").getAsString());
+							World world = Bukkit.getWorld(lastSavedWorldUUID);
+							if (world != null) {
+								playerWorld = world;
+							}
+						} catch (Exception ex) {
+							mLogger.severe("Got sharddata WorldUUID='" + shardDataJson.get("WorldUUID").getAsString() + "' which is invalid: " + ex.getMessage());
+							ex.printStackTrace();
+						}
 					}
-				}
 
-				if (playerWorld == null) {
-					if (shardDataJson.has("world")) {
-						World world = Bukkit.getWorld(shardDataJson.get("world").getAsString());
+					if (shardDataJson.has("World")) {
+						lastSavedWorldName = shardDataJson.get("World").getAsString();
+					}
+
+					if (playerWorld == null) {
+						World world = Bukkit.getWorld(lastSavedWorldName);
 						if (world != null) {
 							playerWorld = world;
 						}
 					}
 				}
 			}
+
 			if (playerWorld == null) {
 				playerWorld = Bukkit.getWorlds().get(0);
 			}
 
-			// Throw an event that lets other plugins modify the join world
-			PlayerJoinSetWorldEvent worldEvent = new PlayerJoinSetWorldEvent(player, playerWorld);
+			/* After this point playerWorld is always non-null and a valid loaded world */
+
+			// Throw an event that lets other plugins modify the join world.
+			mLogger.finer("Calling PlayerJoinSetWorldEvent for player '" + player.getName() + "' with world={" + playerWorld.getUID() + ": " + playerWorld.getName() + "}, lastSavedWorld={" + lastSavedWorldUUID + ": " + lastSavedWorldName + "}");
+			PlayerJoinSetWorldEvent worldEvent = new PlayerJoinSetWorldEvent(player, playerWorld, lastSavedWorldUUID, lastSavedWorldName);
 			Bukkit.getPluginManager().callEvent(worldEvent);
+
+			playerWorld = worldEvent.getWorld();
+			mLogger.finer("After PlayerJoinSetWorldEvent for player '" + player.getName() + "' got world={" + playerWorld.getUID() + ": " + playerWorld.getName() + "}");
 
 			final JsonObject shardDataJson;
 			if (shardData == null || shardData.isEmpty())  {
+				mLogger.finer("No shard data for player '" + player.getName() + "'");
 				shardDataJson = new JsonObject();
 			} else {
-				shardDataJson = mGson.fromJson(shardData, JsonObject.class);
+				/* Look up in the shard data first the "world" part - data from this world about where the player should be */
+				String worldShardData = shardData.get(MonumentaRedisSyncAPI.getRedisPerShardDataWorldKey(playerWorld));
+				if (worldShardData == null || worldShardData.isEmpty())  {
+					mLogger.finer("No world shard data for player '" + player.getName() + "', using default");
+					shardDataJson = new JsonObject();
+				} else {
+					mLogger.finer("Found world shard data for player '" + player.getName() + "': '" + worldShardData + "'");
+					shardDataJson = mGson.fromJson(worldShardData, JsonObject.class);
+				}
 			}
+
+			/* At this point shardDataJson is a JSON object, possibly empty or containing this world's last saved data elements */
 
 			if (!shardDataJson.has("Pos")) {
 				// No position data, put player at world spawn
@@ -443,9 +477,11 @@ public class DataEventListener implements Listener {
 				shardDataJson.add("Rotation", rotation);
 			}
 
-			shardDataJson.addProperty("world", worldEvent.getWorld().getName());
-			shardDataJson.addProperty("WorldUUIDMost", worldEvent.getWorld().getUID().getMostSignificantBits());
-			shardDataJson.addProperty("WorldUUIDLeast", worldEvent.getWorld().getUID().getLeastSignificantBits());
+			shardDataJson.addProperty("world", playerWorld.getName());
+			shardDataJson.addProperty("WorldUUIDMost", playerWorld.getUID().getMostSignificantBits());
+			shardDataJson.addProperty("WorldUUIDLeast", playerWorld.getUID().getLeastSignificantBits());
+
+			/* At this point shardDataJson contains at minimum the world the player should be attached to and the location/rotation */
 
 			Object nbtTagCompound = mAdapter.retrieveSaveData(data, shardDataJson);
 			event.setData(nbtTagCompound);
@@ -516,10 +552,23 @@ public class DataEventListener implements Listener {
 			RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 			futures.add(commands.multi()); /* < MULTI */
 
-			/* sharddata */
-			mLogger.finest(() -> "sharddata: " + data.getShardData());
+			/*
+			 * sharddata
+			 * This has two parts - an entry for the overall shard, and an entry for the specific world the player is on
+			 */
 			String shardDataPath = MonumentaRedisSyncAPI.getRedisPerShardDataPath(player);
-			commands.hset(shardDataPath, Conf.getShardDataName(), data.getShardData());
+			// Save the data specifically for the world the player is currently on
+			String worldKey = MonumentaRedisSyncAPI.getRedisPerShardDataWorldKey(player.getWorld());
+			commands.hset(shardDataPath, worldKey, data.getShardData());
+			mLogger.finest("sharddata (world): " + worldKey + "=" + data.getShardData());
+
+			// Save the data for this shard indicating which world the player is currently on
+			JsonObject overallShardData = new JsonObject();
+			overallShardData.addProperty("WorldUUID", player.getWorld().getUID().toString());
+			overallShardData.addProperty("World", player.getWorld().getName());
+			String overallShardDataStr = mGson.toJson(overallShardData);
+			commands.hset(shardDataPath, Conf.getShard(), overallShardDataStr);
+			mLogger.finest("sharddata (overall): " + Conf.getShard() + "=" + overallShardDataStr);
 
 			/* history */
 			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);

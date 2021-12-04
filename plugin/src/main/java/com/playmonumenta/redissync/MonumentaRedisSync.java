@@ -132,9 +132,6 @@ public class MonumentaRedisSync extends JavaPlugin {
 		}
 		shard = config.getString("shard_name", shard);
 
-		World defaultWorld = Bukkit.getWorlds().get(0);
-		String shardDataName = config.getString("shard_data_name", defaultWorld.getUID().toString() + ":" + defaultWorld.getName());
-
 		int history = config.getInt("history_amount", 20);
 		int ticksPerPlayerAutosave = config.getInt("ticks_per_player_autosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
@@ -155,7 +152,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new Conf(getLogger(), host, port, domain, shard, shardDataName, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new Conf(getLogger(), host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
 	}
 
 	public void setLogLevel(Level level) {

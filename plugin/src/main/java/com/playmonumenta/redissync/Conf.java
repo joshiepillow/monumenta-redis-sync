@@ -9,7 +9,6 @@ public class Conf {
 	private final int mPort;
 	private final String mDomain;
 	private final String mShard;
-	private final String mShardDataName;
 	private final int mHistory;
 	private final int mTicksPerPlayerAutosave;
 	private final boolean mSavingDisabled;
@@ -31,10 +30,6 @@ public class Conf {
 		return INSTANCE.mShard;
 	}
 
-	protected static String getShardDataName() {
-		return INSTANCE.mShardDataName;
-	}
-
 	protected static int getHistory() {
 		return INSTANCE.mHistory;
 	}
@@ -51,12 +46,11 @@ public class Conf {
 		return INSTANCE.mScoreboardCleanupEnabled;
 	}
 
-	protected Conf(Logger logger, String host, int port, String domain, String shard, String shardDataName, int history, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
+	protected Conf(Logger logger, String host, int port, String domain, String shard, int history, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
 		mHost = host;
 		mPort = port;
 		mDomain = domain;
 		mShard = shard;
-		mShardDataName = shardDataName;
 		mHistory = history;
 		mTicksPerPlayerAutosave = ticksPerPlayerAutosave;
 		mSavingDisabled = savingDisabled;
@@ -68,7 +62,6 @@ public class Conf {
 		logger.info("  redis_port = " + Integer.toString(mPort));
 		logger.info("  server_domain = " + (mDomain == null ? "null" : mDomain));
 		logger.info("  shard_name = " + (mShard == null ? "null" : mShard));
-		logger.info("  shard_data_name = " + (mShardDataName == null ? "null" : mShardDataName));
 		logger.info("  history_amount = " + Integer.toString(mHistory));
 		logger.info("  ticks_per_player_autosave = " + Integer.toString(mTicksPerPlayerAutosave));
 		logger.info("  saving_disabled = " + Boolean.toString(mSavingDisabled));
