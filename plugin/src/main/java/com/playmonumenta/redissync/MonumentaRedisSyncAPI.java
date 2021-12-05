@@ -849,7 +849,7 @@ public class MonumentaRedisSyncAPI {
 		public void applyToPlayer(Player player) {
 			player.teleport(mPlayerLoc);
 			player.setVelocity(mMotion);
-			player.setFlying(mFlying);
+			player.setFlying(mFlying && player.getAllowFlight());
 			player.setGliding(mFallFlying);
 			player.setFallDistance(mFallDistance);
 			player.setBedSpawnLocation(mSpawnLoc, mSpawnForced);
