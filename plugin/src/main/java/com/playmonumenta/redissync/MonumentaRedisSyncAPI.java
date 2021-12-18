@@ -34,7 +34,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.util.Vector;
@@ -392,16 +391,18 @@ public class MonumentaRedisSyncAPI {
 			throw new Exception("MonumentaRedisSync is not loaded!");
 		}
 
-		new BukkitRunnable() {
-			public void run() {
-				RedisAPI api = RedisAPI.getInstance();
+		RedisAPI api = RedisAPI.getInstance();
 
-				String saveName = name;
-				if (saveName == null) {
-					saveName = player.getUniqueId().toString();
-				}
+		String saveName;
+		if (name != null) {
+			saveName = name;
+		} else {
+			saveName = player.getUniqueId().toString();
+		}
 
-				String history = api.sync().hget(getStashPath(), saveName.toString() + "-history");
+		Bukkit.getScheduler().runTaskAsynchronously(mrs, () -> {
+			String history = api.sync().hget(getStashPath(), saveName.toString() + "-history");
+			Bukkit.getScheduler().runTask(mrs, () -> {
 				if (history == null) {
 					if (name == null) {
 						player.sendMessage(ChatColor.RED + "You don't have any stash data");
@@ -422,8 +423,8 @@ public class MonumentaRedisSyncAPI {
 				} else {
 					player.sendMessage(ChatColor.GOLD + "Stash '" + name + "' last saved on " + split[0] + " by " + split[2] + " " + getTimeDifferenceSince(Long.parseLong(split[1])) + " ago");
 				}
-			}
-		}.runTaskAsynchronously(mrs);
+			});
+		});
 	}
 
 	public static void playerRollback(Player moderator, Player player, int index) throws Exception {
