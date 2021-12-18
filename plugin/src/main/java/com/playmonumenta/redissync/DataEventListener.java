@@ -67,10 +67,9 @@ import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
@@ -102,7 +101,7 @@ public class DataEventListener implements Listener {
 		}
 	}
 
-	private static final String TRANSFER_UNLOCK_TASK_METAKEY = "RedisSyncTransferUnlockMetakey";
+	private static final Map<UUID, BukkitTask> TRANSFER_UNLOCK_TASKS = new HashMap<>();
 	private static final int TRANSFER_UNLOCK_TIMEOUT_TICKS = 10 * 20;
 	private static DataEventListener INSTANCE = null;
 
@@ -159,20 +158,13 @@ public class DataEventListener implements Listener {
 		 * Start a task to automatically unlock the player if transfer times out.
 		 * This task is cancelled when player leaves the server (PlayerQuitEvent)
 		 */
-		Plugin plugin = MonumentaRedisSync.getInstance();
-		BukkitRunnable unlockRunnable = new BukkitRunnable() {
-			@Override
-			public void run() {
-				if (DataEventListener.isPlayerTransferring(player)) {
-					player.sendMessage(ChatColor.RED + "Transferring timed out and your player has been unlocked");
-					DataEventListener.setPlayerAsNotTransferring(player);
-					player.removeMetadata(TRANSFER_UNLOCK_TASK_METAKEY, plugin);
-				}
+		TRANSFER_UNLOCK_TASKS.put(player.getUniqueId(), Bukkit.getScheduler().runTaskLater(MonumentaRedisSync.getInstance(), () -> {
+			if (DataEventListener.isPlayerTransferring(player)) {
+				player.sendMessage(ChatColor.RED + "Transferring timed out and your player has been unlocked");
+				DataEventListener.setPlayerAsNotTransferring(player);
 			}
-		};
-		unlockRunnable.runTaskLater(plugin, TRANSFER_UNLOCK_TIMEOUT_TICKS);
-		player.setMetadata(TRANSFER_UNLOCK_TASK_METAKEY,
-		                   new FixedMetadataValue(plugin, unlockRunnable));
+			TRANSFER_UNLOCK_TASKS.remove(player.getUniqueId());
+		}, TRANSFER_UNLOCK_TIMEOUT_TICKS));
 	}
 
 	protected static void setPlayerReturnParams(Player player, Location returnLoc, Float returnYaw, Float returnPitch) {
@@ -216,26 +208,24 @@ public class DataEventListener implements Listener {
 
 		long startTime = System.currentTimeMillis();
 
-		new BukkitRunnable() {
-			public void run() {
-				blockingWaitForPlayerToSave(player);
+		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+			blockingWaitForPlayerToSave(player);
 
-				mLogger.fine(() -> "Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
+			mLogger.fine(() -> "Committing save took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds");
 
-				/* Run the callback after about 150ms have passed to make sure the redis changes commit */
-				if (sync) {
-					/* Run the sync callback on the main thread */
-					Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> {
-						callback.run();
-					}, 3);
-				} else {
-					/* Run the async callback */
-					Bukkit.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-						callback.run();
-					}, 3);
-				}
+			/* Run the callback after about 150ms have passed to make sure the redis changes commit */
+			if (sync) {
+				/* Run the sync callback on the main thread */
+				Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> {
+					callback.run();
+				}, 3);
+			} else {
+				/* Run the async callback */
+				Bukkit.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+					callback.run();
+				}, 3);
 			}
-		}.runTaskAsynchronously(plugin);
+		});
 	}
 
 	private void blockingWaitForPlayerToSave(Player player) {
@@ -655,15 +645,10 @@ public class DataEventListener implements Listener {
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void playerQuitEvent(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
-		if (player.hasMetadata(TRANSFER_UNLOCK_TASK_METAKEY)) {
-			BukkitRunnable runnable = (BukkitRunnable) player.getMetadata(TRANSFER_UNLOCK_TASK_METAKEY).get(0).value();
-			if (!runnable.isCancelled()) {
-				runnable.cancel();
-			}
-			player.removeMetadata(TRANSFER_UNLOCK_TASK_METAKEY, MonumentaRedisSync.getInstance());
-		}
 
 		UUID playerUUID = player.getUniqueId();
+
+		TRANSFER_UNLOCK_TASKS.remove(playerUUID);
 
 		Bukkit.getScheduler().runTaskLater(MonumentaRedisSync.getInstance(), () -> {
 			for (Player p : Bukkit.getOnlinePlayers()) {
