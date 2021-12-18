@@ -18,14 +18,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 public class ScoreboardCleanupListener implements Listener {
 	private static final int CLEANUP_LOGOUT_DELAY = 20 * 60 * 1; // 1 minute
 
 	private final Plugin mPlugin;
 	private final Logger mLogger;
-	private final Map<UUID, BukkitRunnable> mCleanupTasks = new HashMap<>();
+	private final Map<UUID, BukkitTask> mCleanupTasks = new HashMap<>();
 	private final VersionAdapter mAdapter;
 
 	protected ScoreboardCleanupListener(Plugin plugin, Logger logger, VersionAdapter adapter) {
@@ -58,29 +58,22 @@ public class ScoreboardCleanupListener implements Listener {
 		}
 
 		// Remove any completed runnables from the map to keep things clean
-		Iterator<Map.Entry<UUID, BukkitRunnable>> iter = mCleanupTasks.entrySet().iterator();
+		Iterator<Map.Entry<UUID, BukkitTask>> iter = mCleanupTasks.entrySet().iterator();
 		while (iter.hasNext()) {
 			if (iter.next().getValue().isCancelled()) {
 				iter.remove();
 			}
 		}
 
-		BukkitRunnable cleanupTask = new BukkitRunnable() {
-			String mPlayerName = event.getPlayer().getName();
-
-			@Override
-			public void run() {
-				mAdapter.resetPlayerScores(mPlayerName, Bukkit.getScoreboardManager().getMainScoreboard());
-				mLogger.info("Removed scores for player " + mPlayerName + " from local scoreboard");
-			}
-		};
-		mCleanupTasks.put(event.getPlayer().getUniqueId(), cleanupTask);
-
-		cleanupTask.runTaskLater(mPlugin, CLEANUP_LOGOUT_DELAY);
+		String playerName = event.getPlayer().getName();
+		mCleanupTasks.put(event.getPlayer().getUniqueId(), Bukkit.getScheduler().runTaskLater(mPlugin, () -> {
+			mAdapter.resetPlayerScores(playerName, Bukkit.getScoreboardManager().getMainScoreboard());
+			mLogger.info("Removed scores for player " + playerName + " from local scoreboard");
+		}, CLEANUP_LOGOUT_DELAY));
 	}
 
 	private void cancelCleanupTask(Player player) {
-		BukkitRunnable cleanupTask = mCleanupTasks.remove(player.getUniqueId());
+		BukkitTask cleanupTask = mCleanupTasks.remove(player.getUniqueId());
 		if (cleanupTask != null && !cleanupTask.isCancelled()) {
 			cleanupTask.cancel();
 		}
