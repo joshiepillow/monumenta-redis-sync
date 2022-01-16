@@ -15,7 +15,7 @@ release.properties
 .settings/
 .classpath
 .project
-/bin/
+*/bin/
 
 # User-specific stuff
 .idea/
@@ -139,3 +139,6 @@ run/
 build
 .gradle
 /*.jar
+
+# Monumenta
+upload*.sh
