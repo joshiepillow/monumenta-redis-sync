@@ -666,6 +666,16 @@ public class MonumentaRedisSyncAPI {
 		return api.async().hgetall(getRedisRemoteDataPath(uuid)).toCompletableFuture();
 	}
 
+	/**
+	 * Returns the current server domain as set in the config file for this plugin.
+	 *
+	 * This domain info is useful as a prefix for redis keys so that multiple different types of
+	 * servers can share the same redis database without intermingling data
+	 */
+	public static String getServerDomain() {
+		return Conf.getDomain();
+	}
+
 	@Nonnull
 	public static String getRedisDataPath(@Nonnull Player player) {
 		return getRedisDataPath(player.getUniqueId());
