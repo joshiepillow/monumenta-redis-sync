@@ -1,5 +1,23 @@
 package com.playmonumenta.redissync;
 
+import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
+import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
+import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
+import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.playmonumenta.redissync.adapters.VersionAdapter;
+import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
+import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
+import com.playmonumenta.redissync.event.PlayerJoinSetWorldEvent;
+import com.playmonumenta.redissync.event.PlayerSaveEvent;
+import com.playmonumenta.redissync.event.PlayerTransferFailEvent;
+import com.playmonumenta.redissync.utils.ScoreboardUtils;
+import io.lettuce.core.LettuceFutures;
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.output.KeyValueStreamingChannel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -13,23 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
-
-import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
-import com.destroystokyo.paper.event.player.PlayerAdvancementDataSaveEvent;
-import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
-import com.destroystokyo.paper.event.player.PlayerDataSaveEvent;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.playmonumenta.redissync.adapters.VersionAdapter;
-import com.playmonumenta.redissync.adapters.VersionAdapter.ReturnParams;
-import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
-import com.playmonumenta.redissync.event.PlayerJoinSetWorldEvent;
-import com.playmonumenta.redissync.event.PlayerSaveEvent;
-import com.playmonumenta.redissync.utils.ScoreboardUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -70,11 +72,6 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitTask;
-
-import io.lettuce.core.LettuceFutures;
-import io.lettuce.core.RedisFuture;
-import io.lettuce.core.api.async.RedisAsyncCommands;
-import io.lettuce.core.output.KeyValueStreamingChannel;
 
 public class DataEventListener implements Listener {
 	private class PlayerUuidToNameStreamingChannel implements KeyValueStreamingChannel<String, String> {
@@ -142,6 +139,7 @@ public class DataEventListener implements Listener {
 		if (INSTANCE.mTransferringPlayers.contains(player.getUniqueId())) {
 			throw new Exception("Player " + player.getName() + " is already transferring");
 		}
+
 		INSTANCE.mTransferringPlayers.add(player.getUniqueId());
 
 		/* Record transferring player shoulder entity UUIDs to prevent them from being duplicated into the world by timing exploit */
@@ -172,11 +170,16 @@ public class DataEventListener implements Listener {
 	}
 
 	protected static void setPlayerAsNotTransferring(Player player) {
-		INSTANCE.mTransferringPlayers.remove(player.getUniqueId());
+		boolean wasTransferring = INSTANCE.mTransferringPlayers.remove(player.getUniqueId());
 		INSTANCE.mReturnParams.remove(player.getUniqueId());
 
 		/* Remove the shoulder entity spawn block (i.e. parrot) when player is not transferring anymore */
 		INSTANCE.mTransferringPlayerShoulderEntities.entrySet().removeIf(entry -> entry.getValue().equals(player.getUniqueId()));
+
+		if (wasTransferring) {
+			PlayerTransferFailEvent event = new PlayerTransferFailEvent(player);
+			Bukkit.getPluginManager().callEvent(event);
+		}
 	}
 
 	protected static boolean isPlayerTransferring(Player player) {
