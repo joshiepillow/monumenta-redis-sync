@@ -44,6 +44,7 @@ import io.lettuce.core.RedisFuture;
 import io.lettuce.core.ScoredValue;
 import io.lettuce.core.TransactionResult;
 import io.lettuce.core.api.async.RedisAsyncCommands;
+import net.kyori.adventure.text.Component;
 
 public class MonumentaRedisSyncAPI {
 	public static class RedisPlayerData {
@@ -144,11 +145,11 @@ public class MonumentaRedisSyncAPI {
 		return future.thenApply((data) -> data.keySet().stream().map((uuid) -> UUID.fromString(uuid)).collect(Collectors.toSet())).toCompletableFuture();
 	}
 
-	public static String cachedUuidToName(UUID uuid) {
+	public static @Nullable String cachedUuidToName(UUID uuid) {
 		return mUuidToName.get(uuid);
 	}
 
-	public static UUID cachedNameToUuid(String name) {
+	public static @Nullable UUID cachedNameToUuid(String name) {
 		return mNameToUuid.get(name);
 	}
 
@@ -160,7 +161,7 @@ public class MonumentaRedisSyncAPI {
 		return new ConcurrentSkipListSet<>(mUuidToName.keySet());
 	}
 
-	public static String getCachedCurrentName(String oldName) {
+	public static @Nullable String getCachedCurrentName(String oldName) {
 		UUID uuid = cachedNameToUuid(oldName);
 		if (uuid == null) {
 			return null;
@@ -170,44 +171,15 @@ public class MonumentaRedisSyncAPI {
 
 	/* TODO In CommandAPI 6.0.0, use a Trie to handle IGN suggestions */
 
-
-	/**
-     * @deprecated
-     * This method that includes a "plugin" argument will be removed in a future version. Simply remove the plugin argument.
-     */
-	@Deprecated
-	public static void sendPlayer(Plugin plugin, Player player, String target) throws Exception {
-		sendPlayer(plugin, player, target, null);
-	}
-
-
-	/**
-     * @deprecated
-     * This method that includes a "plugin" argument will be removed in a future version. Simply remove the plugin argument.
-     */
-	@Deprecated
-	public static void sendPlayer(Plugin plugin, Player player, String target, Location returnLoc) throws Exception {
-		sendPlayer(plugin, player, target, returnLoc, null, null);
-	}
-
-	/**
-     * @deprecated
-     * This method that includes a "plugin" argument will be removed in a future version. Simply remove the plugin argument.
-     */
-	@Deprecated
-	public static void sendPlayer(Plugin plugin, Player player, String target, Location returnLoc, Float returnYaw, Float returnPitch) throws Exception {
-		sendPlayer(player, target, returnLoc, returnYaw, returnPitch);
-	}
-
 	public static void sendPlayer(Player player, String target) throws Exception {
 		sendPlayer(player, target, null);
 	}
 
-	public static void sendPlayer(Player player, String target, Location returnLoc) throws Exception {
+	public static void sendPlayer(Player player, String target, @Nullable Location returnLoc) throws Exception {
 		sendPlayer(player, target, returnLoc, null, null);
 	}
 
-	public static void sendPlayer(Player player, String target, Location returnLoc, Float returnYaw, Float returnPitch) throws Exception {
+	public static void sendPlayer(Player player, String target, @Nullable Location returnLoc, @Nullable Float returnYaw, @Nullable Float returnPitch) throws Exception {
 		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");
@@ -259,7 +231,7 @@ public class MonumentaRedisSyncAPI {
 		mrs.getLogger().fine(() -> "Transferring players took " + Long.toString(System.currentTimeMillis() - startTime) + " milliseconds on main thread");
 	}
 
-	public static void stashPut(Player player, String name) throws Exception {
+	public static void stashPut(Player player, @Nullable String name) throws Exception {
 		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");
@@ -309,7 +281,7 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
-	public static void stashGet(Player player, String name) throws Exception {
+	public static void stashGet(Player player, @Nullable String name) throws Exception {
 		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");
@@ -373,11 +345,11 @@ public class MonumentaRedisSyncAPI {
 			}
 
 			/* Kick the player on the main thread to force rejoin */
-			Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kickPlayer("Stash data loaded successfully"));
+			Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kick(Component.text("Stash data loaded successfully")));
 		});
 	}
 
-	public static void stashInfo(Player player, String name) throws Exception {
+	public static void stashInfo(Player player, @Nullable String name) throws Exception {
 		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync is not loaded!");
@@ -479,7 +451,7 @@ public class MonumentaRedisSyncAPI {
 			moderator.sendMessage(ChatColor.GREEN + "Player " + player.getName() + " rolled back successfully");
 
 			/* Kick the player on the main thread to force rejoin */
-			Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kickPlayer("Your player data has been rolled back, and you can now re-join the server"));
+			Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kick(Component.text("Your player data has been rolled back, and you can now re-join the server")));
 		});
 	}
 
@@ -538,7 +510,7 @@ public class MonumentaRedisSyncAPI {
 			}
 
 			/* Kick the player on the main thread to force rejoin */
-			Bukkit.getServer().getScheduler().runTask(mrs, () -> loadto.kickPlayer("Data loaded from player " + loadfrom.getName() + " at index " + Integer.toString(index) + " and you can now re-join the server"));
+			Bukkit.getServer().getScheduler().runTask(mrs, () -> loadto.kick(Component.text("Data loaded from player " + loadfrom.getName() + " at index " + Integer.toString(index) + " and you can now re-join the server")));
 		});
 	}
 
@@ -897,7 +869,7 @@ public class MonumentaRedisSyncAPI {
 
 			if (jsonStr != null && !jsonStr.isEmpty()) {
 				try {
-					JsonObject obj = (new Gson()).fromJson(jsonStr, JsonObject.class);
+					JsonObject obj = new Gson().fromJson(jsonStr, JsonObject.class);
 					if (obj.has("SpawnX")) {
 						spawnLoc.setX(obj.get("SpawnX").getAsDouble());
 					}
@@ -952,7 +924,7 @@ public class MonumentaRedisSyncAPI {
 	 * Only valid if the player is currently on this shard.
 	 *
 	 * @param player  Player's to get data for
-	 * @param world	  World to get data for
+	 * @param world   World to get data for
 	 *
 	 * @return plugin data for this identifier (or null if it doesn't exist or player isn't online)
 	 */
@@ -1048,7 +1020,7 @@ public class MonumentaRedisSyncAPI {
 			throw new Exception("MonumentaRedisSync invoked but is not loaded");
 		}
 
-		RedisAsyncCommands<String,byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
+		RedisAsyncCommands<String, byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
 		commands.multi();
 
 		commands.lindex(MonumentaRedisSyncAPI.getRedisDataPath(uuid), 0);
@@ -1091,11 +1063,11 @@ public class MonumentaRedisSyncAPI {
 			return future;
 		}
 
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 
 		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid), 0)
 			.thenApply(
-				(scoreData) -> (new Gson()).fromJson(scoreData, JsonObject.class).entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> entry.getValue().getAsInt())))
+				(scoreData) -> new Gson().fromJson(scoreData, JsonObject.class).entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> entry.getValue().getAsInt())))
 			.whenComplete((scoreMap, ex) -> {
 				Bukkit.getScheduler().runTask(mrs, () -> {
 					if (ex != null) {
@@ -1126,7 +1098,7 @@ public class MonumentaRedisSyncAPI {
 			throw new Exception("MonumentaRedisSync invoked but is not loaded");
 		}
 
-		RedisAsyncCommands<String,byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
+		RedisAsyncCommands<String, byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
 		commands.multi();
 
 		SaveData splitData = mrs.getVersionAdapter().extractSaveData(data.getNbtTagCompoundData(), null);
@@ -1152,19 +1124,19 @@ public class MonumentaRedisSyncAPI {
 
 	/********************* Set *********************/
 	public static CompletableFuture<Long> rboardSet(String name, Map<String, String> data) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		return commands.hset(getRedisRboardPath(name), data).toCompletableFuture();
 	}
 
 	/********************* Add *********************/
 	public static CompletableFuture<Long> rboardAdd(String name, String key, long amount) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		return commands.hincrby(getRedisRboardPath(name), key, amount).toCompletableFuture();
 	}
 
 	/********************* Get *********************/
 	public static CompletableFuture<Map<String, String>> rboardGet(String name, String... keys) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		commands.multi();
 		for (String key : keys) {
 			commands.hincrby(getRedisRboardPath(name), key, 0);
@@ -1180,7 +1152,7 @@ public class MonumentaRedisSyncAPI {
 
 	/********************* GetAndReset *********************/
 	public static CompletableFuture<Map<String, String>> rboardGetAndReset(String name, String... keys) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		commands.multi();
 		CompletableFuture<Map<String, String>> retval = commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
 			Map<String, String> transformed = new LinkedHashMap<>();
@@ -1194,25 +1166,25 @@ public class MonumentaRedisSyncAPI {
 
 	/********************* GetKeys *********************/
 	public static CompletableFuture<List<String>> rboardGetKeys(String name) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		return commands.hkeys(getRedisRboardPath(name)).toCompletableFuture();
 	}
 
 	/********************* GetAll *********************/
 	public static CompletableFuture<Map<String, String>> rboardGetAll(String name) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		return commands.hgetall(getRedisRboardPath(name)).toCompletableFuture();
 	}
 
 	/********************* Reset *********************/
 	public static CompletableFuture<Long> rboardReset(String name, String... keys) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		return commands.hdel(getRedisRboardPath(name), keys).toCompletableFuture();
 	}
 
 	/********************* ResetAll *********************/
 	public static CompletableFuture<Long> rboardResetAll(String name) throws Exception {
-		RedisAsyncCommands<String,String> commands = RedisAPI.getInstance().async();
+		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		return commands.del(getRedisRboardPath(name)).toCompletableFuture();
 	}
 

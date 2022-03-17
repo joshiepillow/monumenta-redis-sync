@@ -5,6 +5,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
+
 import com.google.gson.JsonObject;
 import com.playmonumenta.networkrelay.GatherHeartbeatDataEvent;
 import com.playmonumenta.networkrelay.NetworkRelayAPI;
@@ -18,7 +20,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 
 public class NetworkRelayIntegration implements Listener {
-	private static NetworkRelayIntegration INSTANCE = null;
+	private static @Nullable NetworkRelayIntegration INSTANCE = null;
 	private static final String LOGIN_EVENT_CHANNEL = "com.playmonumenta.redissync.loginEvent";
 	private static final String PLUGIN_IDENTIFIER = "com.playmonumenta.redissync";
 	private final Logger mLogger;
@@ -30,7 +32,7 @@ public class NetworkRelayIntegration implements Listener {
 		mShardName = NetworkRelayAPI.getShardName();
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
 	public void playerLoginEvent(PlayerLoginEvent event) {
 		if (mShardName == null) {
 			return;
@@ -55,7 +57,7 @@ public class NetworkRelayIntegration implements Listener {
 		});
 	}
 
-	@EventHandler(priority = EventPriority.LOW)
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
 	public void networkRelayMessageEvent(NetworkRelayMessageEvent event) throws Exception {
 		switch (event.getChannel()) {
 		case LOGIN_EVENT_CHANNEL:
@@ -71,7 +73,7 @@ public class NetworkRelayIntegration implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOW)
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
 	public void gatherHeartbeatDataEvent(GatherHeartbeatDataEvent event) throws Exception {
 		mLogger.finest("Got relay request for heartbeat data");
 		/* Don't actually need to set any data - just being present is sufficient */
@@ -128,7 +130,7 @@ public class NetworkRelayIntegration implements Listener {
 		MonumentaRedisSyncAPI.updateNameToUuid(playerName, playerUuid);
 	}
 
-	public static String getShardName() {
+	public static @Nullable String getShardName() {
 		if (INSTANCE != null) {
 			try {
 				return NetworkRelayAPI.getShardName();
