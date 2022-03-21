@@ -42,7 +42,7 @@ public class AutoSaveListener implements Listener {
 
 			// Distribute saves evenly in the autosave interval.
 			// This means that at most a player will take two autosave intervals to save
-			int delayBetweenSaves = Conf.getTicksPerPlayerAutosave() / players.size();
+			int delayBetweenSaves = ConfigAPI.getTicksPerPlayerAutosave() / players.size();
 
 			// Remove all the previous iteration saves
 			for (Map.Entry<UUID, BukkitTask> entry : mPendingSaves.entrySet()) {
@@ -72,7 +72,7 @@ public class AutoSaveListener implements Listener {
 
 				mPendingSaves.put(uuid, task);
 			}
-		}, Conf.getTicksPerPlayerAutosave(), Conf.getTicksPerPlayerAutosave());
+		}, ConfigAPI.getTicksPerPlayerAutosave(), ConfigAPI.getTicksPerPlayerAutosave());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)

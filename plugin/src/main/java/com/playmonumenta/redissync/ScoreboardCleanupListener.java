@@ -53,7 +53,7 @@ public class ScoreboardCleanupListener implements Listener {
 	public void playerQuitEvent(PlayerQuitEvent event) {
 		cancelCleanupTask(event.getPlayer());
 
-		if (!Conf.getScoreboardCleanupEnabled()) {
+		if (!ConfigAPI.getScoreboardCleanupEnabled()) {
 			return;
 		}
 

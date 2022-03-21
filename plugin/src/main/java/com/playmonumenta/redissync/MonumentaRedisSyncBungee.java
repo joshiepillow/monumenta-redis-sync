@@ -22,7 +22,7 @@ public class MonumentaRedisSyncBungee extends Plugin {
 		System.setProperty("com.playmonumenta.redissync.internal.netty", "com.playmonumenta.redissync.internal");
 
 		loadConfig();
-		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
+		mRedisAPI = new RedisAPI(ConfigAPI.getRedisHost(), ConfigAPI.getRedisPort());
 		getProxy().getPluginManager().registerListener(this, new BungeeListener());
 	}
 
@@ -44,11 +44,11 @@ public class MonumentaRedisSyncBungee extends Plugin {
 			getLogger().warning("Failed to load config file, using defaults: " + ex.getMessage());
 			config = new Configuration();
 		}
-		String host = config.getString("redis_host", "redis");
-		int port = config.getInt("redis_port", 6379);
-		String domain = "bungee";
-		String shard = "bungee";
-		int history = -1;
+		String redisHost = config.getString("redis_host", "redis");
+		int redisPort = config.getInt("redis_port", 6379);
+		String serverDomain = config.getString("server_domain", "bungee");
+		String shardName = config.getString("shard_name", "bungee");
+		int historyAmount = -1;
 		int ticksPerPlayerAutosave = -1;
 		boolean savingDisabled = true;
 		boolean scoreboardCleanupEnabled = false;
@@ -68,7 +68,7 @@ public class MonumentaRedisSyncBungee extends Plugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new Conf(getLogger(), host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new ConfigAPI(getLogger(), redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
 	}
 
 	public void setLogLevel(Level level) {

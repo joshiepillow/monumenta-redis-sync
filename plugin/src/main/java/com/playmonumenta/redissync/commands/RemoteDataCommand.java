@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
+import com.playmonumenta.redissync.RemoteDataAPI;
 
 import org.bukkit.plugin.Plugin;
 
@@ -36,7 +37,7 @@ public class RemoteDataCommand {
 						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
 					}
 
-					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, MonumentaRedisSyncAPI.remoteDataGetAll(finalUUID), (data, ex) -> {
+					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.getAll(finalUUID), (data, ex) -> {
 						if (ex != null) {
 							sender.sendMessage("remoteDataGetAll exception: " + ex.getMessage());
 						} else {
@@ -73,7 +74,7 @@ public class RemoteDataCommand {
 						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
 					}
 
-					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, MonumentaRedisSyncAPI.remoteDataGet(finalUUID, key), (data, ex) -> {
+					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.get(finalUUID, key), (data, ex) -> {
 						if (ex != null) {
 							sender.sendMessage("remoteDataGet exception: " + ex.getMessage());
 						} else {
@@ -109,7 +110,7 @@ public class RemoteDataCommand {
 						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
 					}
 
-					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, MonumentaRedisSyncAPI.remoteDataSet(finalUUID, key, value), (data, ex) -> {
+					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.set(finalUUID, key, value), (data, ex) -> {
 						if (ex != null) {
 							sender.sendMessage("remoteDataSet exception: " + ex.getMessage());
 						} else {
@@ -140,7 +141,7 @@ public class RemoteDataCommand {
 						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
 					}
 
-					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, MonumentaRedisSyncAPI.remoteDataDel(finalUUID, key), (data, ex) -> {
+					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.del(finalUUID, key), (data, ex) -> {
 						if (ex != null) {
 							sender.sendMessage("remoteDataDel exception: " + ex.getMessage());
 						} else {

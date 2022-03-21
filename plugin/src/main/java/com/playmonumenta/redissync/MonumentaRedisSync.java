@@ -89,10 +89,10 @@ public class MonumentaRedisSync extends JavaPlugin {
 		}
 
 		loadConfig();
-		mRedisAPI = new RedisAPI(Conf.getHost(), Conf.getPort());
+		mRedisAPI = new RedisAPI(ConfigAPI.getRedisHost(), ConfigAPI.getRedisPort());
 		getServer().getPluginManager().registerEvents(new DataEventListener(this.getLogger(), mVersionAdapter), this);
 		getServer().getPluginManager().registerEvents(new ScoreboardCleanupListener(this, this.getLogger(), mVersionAdapter), this);
-		if (Conf.getTicksPerPlayerAutosave() > 0) {
+		if (ConfigAPI.getTicksPerPlayerAutosave() > 0) {
 			getServer().getPluginManager().registerEvents(new AutoSaveListener(this, mVersionAdapter), this);
 		}
 
@@ -123,18 +123,18 @@ public class MonumentaRedisSync extends JavaPlugin {
 		File configFile = new File(this.getDataFolder(), "config.yml");
 		/* TODO: Default file if not exist */
 		FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-		String host = config.getString("redis_host", "redis");
-		int port = config.getInt("redis_port", 6379);
-		String domain = config.getString("server_domain", "default_domain");
+		String redisHost = config.getString("redis_host", "redis");
+		int redisPort = config.getInt("redis_port", 6379);
+		String serverDomain = config.getString("server_domain", "default_domain");
 
 		/* Get default shard name from network relay if enabled */
-		String shard = NetworkRelayIntegration.getShardName();
-		if (shard == null) {
-			shard = "default_shard";
+		String shardName = NetworkRelayIntegration.getShardName();
+		if (shardName == null) {
+			shardName = "default_shard";
 		}
-		shard = config.getString("shard_name", shard);
+		shardName = config.getString("shard_name", shardName);
 
-		int history = config.getInt("history_amount", 20);
+		int historyAmount = config.getInt("history_amount", 20);
 		int ticksPerPlayerAutosave = config.getInt("ticks_per_player_autosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
 		boolean scoreboardCleanupEnabled = config.getBoolean("scoreboard_cleanup_enabled", true);
@@ -154,7 +154,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new Conf(getLogger(), host, port, domain, shard, history, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new ConfigAPI(getLogger(), redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
 	}
 
 	public void setLogLevel(Level level) {

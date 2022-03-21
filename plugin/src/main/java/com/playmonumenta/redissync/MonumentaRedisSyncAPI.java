@@ -3,7 +3,6 @@ package com.playmonumenta.redissync;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +40,6 @@ import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
-import io.lettuce.core.ScoredValue;
 import io.lettuce.core.TransactionResult;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import net.kyori.adventure.text.Component;
@@ -192,7 +190,7 @@ public class MonumentaRedisSyncAPI {
 
 		long startTime = System.currentTimeMillis();
 
-		if (target.equalsIgnoreCase(Conf.getShard())) {
+		if (target.equalsIgnoreCase(ConfigAPI.getShardName())) {
 			player.sendMessage(ChatColor.RED + "Can not transfer to the same server you are already on");
 			return;
 		}
@@ -514,217 +512,88 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
-	/**
-	 * Gets a specific remote data entry for a player
-	 *
-	 * @deprecated Use the much nicer API version that doesn't throw exceptions
-	 *
-	 * @return null if no entry was present, String otherwise
-	 */
+	/** @deprecated - use RemoteDataAPI */
 	@Deprecated
 	public static CompletableFuture<String> getRemoteData(UUID uuid, String key) throws Exception {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			throw new Exception("MonumentaRedisSync is not loaded!");
-		}
-
-		return api.async().hget(getRedisRemoteDataPath(uuid), key).toCompletableFuture();
+		return RemoteDataAPI.get(uuid, key);
 	}
 
-	/**
-	 * Sets a specific remote data entry for a player
-	 *
-	 * @deprecated Use the much nicer API version that doesn't throw exceptions
-	 *
-	 * @return True if an entry was set, False otherwise
-	 */
+	/** @deprecated - use RemoteDataAPI */
 	@Deprecated
 	public static CompletableFuture<Boolean> setRemoteData(UUID uuid, String key, String value) throws Exception {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			throw new Exception("MonumentaRedisSync is not loaded!");
-		}
-
-		return api.async().hset(getRedisRemoteDataPath(uuid), key, value).toCompletableFuture();
+		return RemoteDataAPI.set(uuid, key, value);
 	}
 
-	/**
-	 * Atomically increments a specific remote data entry for a player
-	 *
-	 * Note that this will interpret the hash value as an integer (default 0 if not existing)
-	 *
-	 * @deprecated Use the much nicer API version that doesn't throw exceptions
-	 *
-	 * @return Resulting value
-	 */
+	/** @deprecated - use RemoteDataAPI */
 	@Deprecated
 	public static CompletableFuture<Long> incrementRemoteData(UUID uuid, String key, int incby) throws Exception {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			throw new Exception("MonumentaRedisSync is not loaded!");
-		}
-
-		return api.async().hincrby(getRedisRemoteDataPath(uuid), key, incby).toCompletableFuture();
+		return RemoteDataAPI.increment(uuid, key, incby);
 	}
 
-	/**
-	 * Deletes a specific key in the player's remote data.
-	 *
-	 * @deprecated Use the much nicer API version that doesn't throw exceptions
-	 *
-	 * @return True if an entry was present and was deleted, False if no entry was present to begin with
-	 */
+	/** @deprecated - use RemoteDataAPI */
 	@Deprecated
 	public static CompletableFuture<Boolean> delRemoteData(UUID uuid, String key) throws Exception {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			throw new Exception("MonumentaRedisSync is not loaded!");
-		}
-
-		return api.async().hdel(getRedisRemoteDataPath(uuid), key).thenApply((val) -> val == 1).toCompletableFuture();
+		return RemoteDataAPI.del(uuid, key);
 	}
 
-	/**
-	 * Gets a map of all remote data for a player
-	 *
-	 * @deprecated Use the much nicer API version that doesn't throw exceptions
-	 *
-	 * @return Non-null map of keys:values. If no data, will return an empty map
-	 */
+	/** @deprecated - use RemoteDataAPI */
 	@Deprecated
 	public static CompletableFuture<Map<String, String>> getAllRemoteData(UUID uuid) throws Exception {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			throw new Exception("MonumentaRedisSync is not loaded!");
-		}
-
-		return api.async().hgetall(getRedisRemoteDataPath(uuid)).toCompletableFuture();
+		return remoteDataGetAll(uuid);
 	}
 
-	/**
-	 * Gets a specific remote data entry for a player.
-	 *
-	 * Will dispatch the task immediately async, making this suitable for use on main or async thread.
-	 * WARNING: These complete async, if you need to run a sync task on completion you need to schedule it yourself (or wrap with runOnMainThreadWhenComplete)
-	 *
-	 * @return null if no entry was present, String otherwise
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
 	public static CompletableFuture<String> remoteDataGet(UUID uuid, String key) {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			CompletableFuture<String> future = new CompletableFuture<>();
-			future.completeExceptionally(new Exception("MonumentaRedisSync is not loaded!"));
-			return future;
-		}
-
-		return api.async().hget(getRedisRemoteDataPath(uuid), key).toCompletableFuture();
+		return RemoteDataAPI.get(uuid, key);
 	}
 
-	/**
-	 * Gets multiple remote data entries for a player.
-	 *
-	 * Will dispatch the task immediately async, making this suitable for use on main or async thread.
-	 * WARNING: These complete async, if you need to run a sync task on completion you need to schedule it yourself (or wrap with runOnMainThreadWhenComplete)
-	 *
-	 * @return null if no entry was present, String otherwise
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
 	public static CompletableFuture<Map<String, String>> remoteDataGetMulti(UUID uuid, String... keys) {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
-			future.completeExceptionally(new Exception("MonumentaRedisSync is not loaded!"));
-			return future;
-		}
-
-		return api.async().hmget(getRedisRemoteDataPath(uuid), keys).toCompletableFuture().thenApply((listResult) -> listResult.stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> entry.getValue())));
+		return RemoteDataAPI.getMulti(uuid, keys);
 	}
 
-	/**
-	 * Sets a specific remote data entry for a player.
-	 *
-	 * Will dispatch the task immediately async, making this suitable for use on main or async thread.
-	 * WARNING: These complete async, if you need to run a sync task on completion you need to schedule it yourself (or wrap with runOnMainThreadWhenComplete)
-	 *
-	 * @return True if an entry was set, False otherwise
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
 	public static CompletableFuture<Boolean> remoteDataSet(UUID uuid, String key, String value) {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			CompletableFuture<Boolean> future = new CompletableFuture<>();
-			future.completeExceptionally(new Exception("MonumentaRedisSync is not loaded!"));
-			return future;
-		}
-
-		return api.async().hset(getRedisRemoteDataPath(uuid), key, value).toCompletableFuture();
+		return RemoteDataAPI.set(uuid, key, value);
 	}
 
-	/**
-	 * Atomically increments a specific remote data entry for a player.
-	 *
-	 * Note that this will interpret the hash value as an integer (default 0 if not existing)
-	 *
-	 * Will dispatch the task immediately async, making this suitable for use on main or async thread.
-	 * WARNING: These complete async, if you need to run a sync task on completion you need to schedule it yourself (or wrap with runOnMainThreadWhenComplete)
-	 *
-	 * @return Resulting value
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
 	public static CompletableFuture<Long> remoteDataIncrement(UUID uuid, String key, int incby) {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			CompletableFuture<Long> future = new CompletableFuture<>();
-			future.completeExceptionally(new Exception("MonumentaRedisSync is not loaded!"));
-			return future;
-		}
-
-		return api.async().hincrby(getRedisRemoteDataPath(uuid), key, incby).toCompletableFuture();
+		return RemoteDataAPI.increment(uuid, key, incby);
 	}
 
-	/**
-	 * Deletes a specific key in the player's remote data.
-	 *
-	 * Will dispatch the task immediately async, making this suitable for use on main or async thread.
-	 * WARNING: These complete async, if you need to run a sync task on completion you need to schedule it yourself (or wrap with runOnMainThreadWhenComplete)
-	 *
-	 * @return True if an entry was present and was deleted, False if no entry was present to begin with
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
 	public static CompletableFuture<Boolean> remoteDataDel(UUID uuid, String key) {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			CompletableFuture<Boolean> future = new CompletableFuture<>();
-			future.completeExceptionally(new Exception("MonumentaRedisSync is not loaded!"));
-			return future;
-		}
-
-		return api.async().hdel(getRedisRemoteDataPath(uuid), key).thenApply((val) -> val == 1).toCompletableFuture();
+		return RemoteDataAPI.del(uuid, key);
 	}
 
-	/**
-	 * Gets a map of all remote data for a player.
-	 *
-	 * Will dispatch the task immediately async, making this suitable for use on main or async thread.
-	 * WARNING: These complete async, if you need to run a sync task on completion you need to schedule it yourself (or wrap with runOnMainThreadWhenComplete)
-	 *
-	 * @return Non-null map of keys:values. If no data, will return an empty map
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
 	public static CompletableFuture<Map<String, String>> remoteDataGetAll(UUID uuid) {
-		RedisAPI api = RedisAPI.getInstance();
-		if (api == null) {
-			CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
-			future.completeExceptionally(new Exception("MonumentaRedisSync is not loaded!"));
-			return future;
-		}
-
-		return api.async().hgetall(getRedisRemoteDataPath(uuid)).toCompletableFuture();
+		return RemoteDataAPI.getAll(uuid);
 	}
 
-	/**
-	 * Returns the current server domain as set in the config file for this plugin.
-	 *
-	 * This domain info is useful as a prefix for redis keys so that multiple different types of
-	 * servers can share the same redis database without intermingling data
-	 */
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
+	public static String getRedisRemoteDataPath(Player player) {
+		return RemoteDataAPI.getRedisPath(player.getUniqueId());
+	}
+
+	/** @deprecated - use RemoteDataAPI */
+	@Deprecated
+	public static String getRedisRemoteDataPath(UUID uuid) {
+		return RemoteDataAPI.getRedisPath(uuid);
+	}
+
+	/** @deprecated - use ConfigAPI */
+	@Deprecated
 	public static String getServerDomain() {
-		return Conf.getDomain();
+		return ConfigAPI.getServerDomain();
 	}
 
 	public static String getRedisDataPath(Player player) {
@@ -732,7 +601,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static String getRedisDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:data", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:data", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getRedisHistoryPath(Player player) {
@@ -740,7 +609,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static String getRedisHistoryPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:history", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:history", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getRedisPerShardDataPath(Player player) {
@@ -748,7 +617,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static String getRedisPerShardDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:sharddata", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:sharddata", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getRedisPerShardDataWorldKey(World world) {
@@ -765,7 +634,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static String getRedisPluginDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:plugins", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:plugins", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getRedisAdvancementsPath(Player player) {
@@ -773,7 +642,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static String getRedisAdvancementsPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:advancements", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:advancements", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getRedisScoresPath(Player player) {
@@ -781,23 +650,15 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static String getRedisScoresPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:scores", Conf.getDomain(), uuid.toString());
-	}
-
-	public static String getRedisRemoteDataPath(Player player) {
-		return getRedisRemoteDataPath(player.getUniqueId());
-	}
-
-	public static String getRedisRemoteDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:remotedata", Conf.getDomain(), uuid.toString());
+		return String.format("%s:playerdata:%s:scores", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getStashPath() {
-		return String.format("%s:stash", Conf.getDomain());
+		return String.format("%s:stash", ConfigAPI.getServerDomain());
 	}
 
 	public static String getStashListPath() {
-		return String.format("%s:stashlist", Conf.getDomain());
+		return String.format("%s:stashlist", ConfigAPI.getServerDomain());
 	}
 
 	public static String getTimeDifferenceSince(long compareTime) {
@@ -1029,49 +890,22 @@ public class MonumentaRedisSyncAPI {
 		return PlayerWorldData.fromJson(worldShardData, world);
 	}
 
-	/**
-	 * Retrieve the leaderboard entries between the specified start and stop indices (inclusive)
-	 *
-	 * @param objective The leaderboard objective name (one leaderboard per objective)
-	 * @param start Starting index to retrieve (inclusive)
-	 * @param stop Ending index to retrieve (inclusive)
-	 * @param ascending If true, leaderboard and results are smallest to largest and vice versa
-	 */
+	/** @deprecated - use LeaderboardAPI */
+	@Deprecated
 	public static CompletableFuture<Map<String, Integer>> getLeaderboard(String objective, long start, long stop, boolean ascending) {
-		RedisAPI api = RedisAPI.getInstance();
-		final RedisFuture<List<ScoredValue<String>>> values;
-		if (ascending) {
-			values = api.async().zrangeWithScores(getRedisLeaderboardPath(objective), start, stop);
-		} else {
-			values = api.async().zrevrangeWithScores(getRedisLeaderboardPath(objective), start, stop);
-		}
-
-		return values.thenApply((scores) -> {
-			LinkedHashMap<String, Integer> map = new LinkedHashMap<String, Integer>();
-			for (ScoredValue<String> value : scores) {
-				map.put(value.getValue(), (int)value.getScore());
-			}
-
-			return (Map<String, Integer>)map;
-		}).toCompletableFuture();
+		return LeaderboardAPI.get(objective, start, stop, ascending);
 	}
 
-	/**
-	 * Updates the specified leaderboard with name/value.
-	 *
-	 * Update is dispatched asynchronously, this method does not block or return success/failure
-	 *
-	 * @param objective The leaderboard objective name (one leaderboard per objective)
-	 * @param name The name to associate with the value
-	 * @param value Leaderboard value
-	 */
+	/** @deprecated - use LeaderboardAPI */
+	@Deprecated
 	public static void updateLeaderboardAsync(String objective, String name, long value) {
-		RedisAPI api = RedisAPI.getInstance();
-		api.async().zadd(getRedisLeaderboardPath(objective), (double)value, name);
+		LeaderboardAPI.updateAsync(objective, name, value);
 	}
 
+	/** @deprecated - use LeaderboardAPI */
+	@Deprecated
 	public static String getRedisLeaderboardPath(String objective) {
-		return String.format("%s:leaderboard:%s", Conf.getDomain(), objective);
+		return LeaderboardAPI.getRedisPath(objective);
 	}
 
 	/** Future returns non-null if successfully loaded data, null on error */
@@ -1202,77 +1036,58 @@ public class MonumentaRedisSyncAPI {
 	 * rboard API
 	 */
 
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static String getRedisRboardPath(String name) throws Exception {
-		if (!name.matches("^[-_0-9A-Za-z$]+$")) {
-			throw new Exception("Name '" + name + "' contains illegal characters, must match '^[-_$0-9A-Za-z$]+'");
-		}
-		return String.format("%s:rboard:%s", Conf.getDomain(), name);
+		return RBoardAPI.getRedisPath(name);
 	}
 
-	/********************* Set *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Long> rboardSet(String name, Map<String, String> data) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		return commands.hset(getRedisRboardPath(name), data).toCompletableFuture();
+		return RBoardAPI.set(name, data);
 	}
 
-	/********************* Add *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Long> rboardAdd(String name, String key, long amount) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		return commands.hincrby(getRedisRboardPath(name), key, amount).toCompletableFuture();
+		return RBoardAPI.add(name, key, amount);
 	}
 
-	/********************* Get *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Map<String, String>> rboardGet(String name, String... keys) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		commands.multi();
-		for (String key : keys) {
-			commands.hincrby(getRedisRboardPath(name), key, 0);
-		}
-		CompletableFuture<Map<String, String>> retval = commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
-			Map<String, String> transformed = new LinkedHashMap<>();
-			list.forEach(item -> transformed.put(item.getKey(), item.getValue()));
-			return transformed;
-		});
-		commands.exec();
-		return retval;
+		return RBoardAPI.get(name, keys);
 	}
 
-	/********************* GetAndReset *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Map<String, String>> rboardGetAndReset(String name, String... keys) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		commands.multi();
-		CompletableFuture<Map<String, String>> retval = commands.hmget(getRedisRboardPath(name), keys).toCompletableFuture().thenApply(list -> {
-			Map<String, String> transformed = new LinkedHashMap<>();
-			list.forEach(item -> transformed.put(item.getKey(), item.getValue()));
-			return transformed;
-		});
-		commands.hdel(getRedisRboardPath(name), keys).toCompletableFuture();
-		commands.exec();
-		return retval;
+		return RBoardAPI.getAndReset(name, keys);
 	}
 
-	/********************* GetKeys *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<List<String>> rboardGetKeys(String name) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		return commands.hkeys(getRedisRboardPath(name)).toCompletableFuture();
+		return RBoardAPI.getKeys(name);
 	}
 
-	/********************* GetAll *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Map<String, String>> rboardGetAll(String name) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		return commands.hgetall(getRedisRboardPath(name)).toCompletableFuture();
+		return RBoardAPI.getAll(name);
 	}
 
-	/********************* Reset *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Long> rboardReset(String name, String... keys) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		return commands.hdel(getRedisRboardPath(name), keys).toCompletableFuture();
+		return RBoardAPI.reset(name, keys);
 	}
 
-	/********************* ResetAll *********************/
+	/** @deprecated - use RBoardAPI */
+	@Deprecated
 	public static CompletableFuture<Long> rboardResetAll(String name) throws Exception {
-		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-		return commands.del(getRedisRboardPath(name)).toCompletableFuture();
+		return RBoardAPI.resetAll(name);
 	}
 
 	/*

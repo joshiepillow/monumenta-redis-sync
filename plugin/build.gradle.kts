@@ -91,6 +91,7 @@ tasks.withType<JavaCompile>().configureEach {
         check("StaticAssignmentInConstructor", CheckSeverity.OFF) // We have tons of these on purpose
         check("StringSplitter", CheckSeverity.OFF) // We have a lot of string splits too which are fine for this use
         check("MutablePublicArray", CheckSeverity.OFF) // These are bad practice but annoying to refactor and low risk of actual bugs
+        check("InlineMeSuggester", CheckSeverity.OFF) // This seems way overkill
     }
 }
 

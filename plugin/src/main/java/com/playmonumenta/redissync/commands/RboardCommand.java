@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
+import com.playmonumenta.redissync.RBoardAPI;
 import com.playmonumenta.redissync.utils.ScoreboardUtils;
 
 import org.bukkit.ChatColor;
@@ -96,7 +97,7 @@ public class RboardCommand {
 			for (int i = 1; i < args.length; i += 2) {
 				vals.put((String)args[i], Integer.toString((Integer)args[i + 1]));
 			}
-			MonumentaRedisSyncAPI.rboardSet(rboardName, vals);
+			RBoardAPI.set(rboardName, vals);
 		};
 
 		arguments.clear();
@@ -114,7 +115,7 @@ public class RboardCommand {
 			for (int i = 1; i < args.length; i += 1) {
 				vals.put((String)args[i], Integer.toString(ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[i])));
 			}
-			MonumentaRedisSyncAPI.rboardSet(rboardName, vals);
+			RBoardAPI.set(rboardName, vals);
 		};
 
 		arguments.clear();
@@ -132,7 +133,7 @@ public class RboardCommand {
 		arguments.add(new ObjectiveArgument("objective"));
 		arguments.add(new IntegerArgument("value"));
 		regWrapper(arguments, (sender, args, rboardName, scoreboardName) -> {
-			MonumentaRedisSyncAPI.rboardAdd(rboardName, (String)args[1], (Integer)args[2]);
+			RBoardAPI.add(rboardName, (String)args[1], (Integer)args[2]);
 		});
 
 		/********************* AddScore *********************/
@@ -142,7 +143,7 @@ public class RboardCommand {
 		arguments.add(new ObjectiveArgument("objective"));
 		arguments.add(new ObjectiveArgument("objectiveToAdd"));
 		regWrapper(arguments, (sender, args, rboardName, scoreboardName) -> {
-			MonumentaRedisSyncAPI.rboardAdd(rboardName, (String)args[1], ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[2]));
+			RBoardAPI.add(rboardName, (String)args[1], ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[2]));
 		});
 
 		/********************* Reset *********************/
@@ -151,7 +152,7 @@ public class RboardCommand {
 			for (int i = 1; i < args.length; i += 1) {
 				vals[i - 1] = (String)args[i];
 			}
-			MonumentaRedisSyncAPI.rboardReset(rboardName, vals);
+			RBoardAPI.reset(rboardName, vals);
 		};
 
 		arguments.clear();
@@ -164,7 +165,7 @@ public class RboardCommand {
 
 		/********************* ResetAll *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			MonumentaRedisSyncAPI.rboardResetAll(rboardName);
+			RBoardAPI.resetAll(rboardName);
 		};
 
 		arguments.clear();
@@ -175,7 +176,7 @@ public class RboardCommand {
 		/********************* GetAll *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
 			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					MonumentaRedisSyncAPI.rboardGetAll(rboardName),
+					RBoardAPI.getAll(rboardName),
 					(Map<String, String> data, Exception except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard getall failed:" + except.getMessage());
@@ -208,7 +209,7 @@ public class RboardCommand {
 				objs[j - 2] = (String)args[j];
 			}
 			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					MonumentaRedisSyncAPI.rboardGet(rboardName, objs),
+					RBoardAPI.get(rboardName, objs),
 					(Map<String, String> data, Exception except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard get failed:" + except.getMessage());
@@ -236,7 +237,7 @@ public class RboardCommand {
 		/********************* AddAndGet *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
 			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					MonumentaRedisSyncAPI.rboardAdd(rboardName, (String)args[2], (Integer)args[3]),
+					RBoardAPI.add(rboardName, (String)args[2], (Integer)args[3]),
 					(Long data, Exception except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard addandget failed:" + except.getMessage());
@@ -265,7 +266,7 @@ public class RboardCommand {
 				objs[j - 2] = (String)args[j];
 			}
 			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					MonumentaRedisSyncAPI.rboardGetAndReset(rboardName, objs),
+					RBoardAPI.getAndReset(rboardName, objs),
 					(Map<String, String> data, Exception except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard getandreset failed:" + except.getMessage());
