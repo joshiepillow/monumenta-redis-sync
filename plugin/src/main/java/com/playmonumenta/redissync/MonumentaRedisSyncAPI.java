@@ -130,7 +130,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static CompletableFuture<UUID> nameToUUID(String name) {
-		return RedisAPI.getInstance().async().hget("name2uuid", name).thenApply((uuid) -> UUID.fromString(uuid)).toCompletableFuture();
+		return RedisAPI.getInstance().async().hget("name2uuid", name).thenApply((uuid) -> (uuid == null || uuid.isEmpty()) ? null : UUID.fromString(uuid)).toCompletableFuture();
 	}
 
 	public static CompletableFuture<Set<String>> getAllPlayerNames() {
