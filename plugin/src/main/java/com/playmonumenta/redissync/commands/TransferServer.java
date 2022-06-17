@@ -1,21 +1,19 @@
 package com.playmonumenta.redissync.commands;
 
-import java.util.Collection;
-
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
 import com.playmonumenta.redissync.NetworkRelayIntegration;
-
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
-import dev.jorel.commandapi.arguments.FloatArgument;
 import dev.jorel.commandapi.arguments.LocationArgument;
+import dev.jorel.commandapi.arguments.RotationArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
+import dev.jorel.commandapi.wrappers.Rotation;
+import java.util.Collection;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
 public class TransferServer {
 	@SuppressWarnings("unchecked")
@@ -58,13 +56,15 @@ public class TransferServer {
 			.withArguments(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS))
 			.withArguments(new StringArgument("server").replaceSuggestions((sender) -> NetworkRelayIntegration.getOnlineTransferTargets()))
 			.withArguments(new LocationArgument("location"))
-			.withArguments(new FloatArgument("yaw"))
-			.withArguments(new FloatArgument("pitch"))
+			.withArguments(new RotationArgument("rotation"))
 			.withPermission(perms)
 			.executes((sender, args) -> {
+				String shard = (String)args[1];
+				Location location = (Location)args[2];
+				Rotation rotation = (Rotation)args[3];
 				for (Player player : (Collection<Player>)args[0]) {
 					try {
-						MonumentaRedisSyncAPI.sendPlayer(player, (String)args[1], (Location)args[2], (Float)args[3], (Float)args[4]);
+						MonumentaRedisSyncAPI.sendPlayer(player, shard, location, rotation.getNormalizedYaw(), rotation.getNormalizedPitch());
 					} catch (Exception ex) {
 						CommandAPI.fail(ex.getMessage());
 					}
