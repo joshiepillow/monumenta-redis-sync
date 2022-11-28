@@ -672,6 +672,11 @@ public class DataEventListener implements Listener {
 		TRANSFER_UNLOCK_TASKS.remove(playerUUID);
 
 		Bukkit.getScheduler().runTaskLater(MonumentaRedisSync.getInstance(), () -> {
+			// Abort if the player started joining again, even if they're not "online" yet
+			if (mLoadingPlayers.contains(playerUUID)) {
+				return;
+			}
+
 			for (Player p : Bukkit.getOnlinePlayers()) {
 				/* Abort if this player is somehow back online */
 				if (p.getUniqueId().equals(playerUUID)) {
