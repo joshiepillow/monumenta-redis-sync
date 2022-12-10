@@ -9,8 +9,6 @@ import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
 import com.playmonumenta.redissync.utils.Trie;
-import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.TransactionResult;
@@ -217,7 +215,7 @@ public class MonumentaRedisSyncAPI {
 
 		player.sendMessage(ChatColor.GOLD + "Transferring you to " + target);
 
-		savePlayer(mrs, player);
+		savePlayer(player);
 
 		/* Lock player during transfer and prevent data saving when they log out */
 		DataEventListener.setPlayerAsTransferring(player);
@@ -239,12 +237,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static void stashPut(Player player, @Nullable String name) throws Exception {
-		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
-		if (mrs == null) {
-			throw new Exception("MonumentaRedisSync is not loaded!");
-		}
-
-		savePlayer(mrs, player);
+		savePlayer(player);
 
 		DataEventListener.waitForPlayerToSaveThenAsync(player, () -> {
 			List<RedisFuture<?>> futures = new ArrayList<>();
@@ -298,7 +291,7 @@ public class MonumentaRedisSyncAPI {
 		 * Save player in case this was a mistake so they can get back
 		 * This also saves per-shard data like location
 		 */
-		savePlayer(mrs, player);
+		savePlayer(player);
 
 		/* Lock player during stash get */
 		DataEventListener.setPlayerAsTransferring(player);
@@ -408,7 +401,7 @@ public class MonumentaRedisSyncAPI {
 		 * Save player in case this was a mistake so they can get back
 		 * This also saves per-shard data like location
 		 */
-		savePlayer(mrs, player);
+		savePlayer(player);
 
 		/* Now that data has saved, the index we want to roll back to is +1 older */
 		final int rollbackIndex = index + 1;
@@ -472,7 +465,7 @@ public class MonumentaRedisSyncAPI {
 		 * Save player in case this was a mistake so they can get back
 		 * This also saves per-shard data like location
 		 */
-		savePlayer(mrs, loadto);
+		savePlayer(loadto);
 
 		/* Lock player during load */
 		DataEventListener.setPlayerAsTransferring(loadto);
@@ -721,14 +714,25 @@ public class MonumentaRedisSyncAPI {
 		return timeStr;
 	}
 
-	private static void savePlayer(MonumentaRedisSync mrs, Player player) throws WrapperCommandSyntaxException {
+	/**
+	 * Saves all of player's data, including advancements, scores, plugin data, inventory, world location, etc.
+	 *
+	 * Also creates a rollback point like all full saves.
+	 *
+	 * Takes several milliseconds so care should be taken not to call this too frequently
+	 */
+	public static void savePlayer(Player player) throws Exception {
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			throw new Exception("MonumentaRedisSync invoked but is not loaded");
+		}
+
 		try {
 			mrs.getVersionAdapter().savePlayer(player);
 		} catch (Exception ex) {
 			String message = "Failed to save player data for player '" + player.getName() + "'";
 			mrs.getLogger().severe(message);
-			ex.printStackTrace();
-			CommandAPI.fail(message);
+			throw new Exception(message, ex);
 		}
 	}
 

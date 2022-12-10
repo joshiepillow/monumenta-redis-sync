@@ -18,6 +18,7 @@ import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.output.KeyValueStreamingChannel;
+import io.papermc.paper.event.server.ServerResourcesReloadedEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -250,6 +251,23 @@ public class DataEventListener implements Listener {
 	}
 
 	/********************* Data Save/Load Event Handlers *********************/
+
+	/*
+	 * When running /minecraft:reload, this event is triggered before player advancement data is reloaded
+	 */
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void serverResourcesReloadedEvent(ServerResourcesReloadedEvent event) {
+		mLogger.fine("ServerResourcesReloadedEvent caused by " + event.getCause() + ", triggering save for all players...");
+		for (Player player : Bukkit.getOnlinePlayers()) {
+			mLogger.finer("Saving player " + player.getName() + " due to datapack reload");
+			try {
+				MonumentaRedisSyncAPI.savePlayer(player);
+			} catch (Exception ex) {
+				mLogger.severe("Failed to save player '" + player.getName() + "': " + ex.getMessage());
+				ex.printStackTrace();
+			}
+		}
+	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
 	public void playerAdvancementDataLoadEvent(PlayerAdvancementDataLoadEvent event) {
