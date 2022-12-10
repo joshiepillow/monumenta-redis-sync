@@ -1140,36 +1140,6 @@ public class MonumentaRedisSyncAPI {
 	 *********************************************************************************/
 
 	/**
-	 * Runs the result of an asynchronous transaction on the main thread after it is completed
-	 *
-	 * Will always call the callback function eventually, even if the resulting transaction fails or is lost.
-	 *
-	 * When the function is called, either data will be non-null and exception null,
-	 * or data will be null and the exception will be non-null
-	 */
-	public static <T> void runWhenAvailable(Plugin plugin, CompletableFuture<T> input, BiConsumer<T, Exception> func) {
-		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-			Exception ex;
-			T data;
-
-			try {
-				data = input.get();
-				ex = null;
-			} catch (Exception e) {
-				data = null;
-				ex = e;
-			}
-
-			final T result = data;
-			final Exception except = ex;
-
-			Bukkit.getScheduler().runTask(plugin, () -> {
-				func.accept(result, except);
-			});
-		});
-	}
-
-	/**
 	 * If MonumentaNetworkRelay is installed, returns a list of all other shard names
 	 * that are currently up and valid transfer targets from this server.
 	 *
@@ -1179,6 +1149,14 @@ public class MonumentaRedisSyncAPI {
 		return NetworkRelayIntegration.getOnlineTransferTargets();
 	}
 
+	/**
+	 * Runs the result of an asynchronous transaction on the main thread after it is completed
+	 *
+	 * Will always call the callback function eventually, even if the resulting transaction fails or is lost.
+	 *
+	 * When the function is called, either data will be non-null and exception null,
+	 * or data will be null and the exception will be non-null
+	 */
 	public static <T> void runOnMainThreadWhenComplete(Plugin plugin, CompletableFuture<T> future, BiConsumer<T, Throwable> func) {
 		future.whenComplete((T result, Throwable ex) -> {
 			Bukkit.getScheduler().runTask(plugin, () -> {

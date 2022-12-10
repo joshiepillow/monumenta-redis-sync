@@ -172,9 +172,9 @@ public class RboardCommand {
 
 		/********************* GetAll *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					RBoardAPI.getAll(rboardName),
-					(Map<String, String> data, Exception except) -> {
+			MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin,
+			                                                  RBoardAPI.getAll(rboardName),
+			                                                  (Map<String, String> data, Throwable except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard getall failed:" + except.getMessage());
 					except.printStackTrace();
@@ -205,9 +205,9 @@ public class RboardCommand {
 			for (int j = 2; j < args.length; j += 1) {
 				objs[j - 2] = (String)args[j];
 			}
-			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					RBoardAPI.get(rboardName, objs),
-					(Map<String, String> data, Exception except) -> {
+			MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin,
+			                                                  RBoardAPI.get(rboardName, objs),
+			                                                  (Map<String, String> data, Throwable except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard get failed:" + except.getMessage());
 					except.printStackTrace();
@@ -233,9 +233,9 @@ public class RboardCommand {
 
 		/********************* AddAndGet *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					RBoardAPI.add(rboardName, (String)args[2], (Integer)args[3]),
-					(Long data, Exception except) -> {
+			MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin,
+			                                                  RBoardAPI.add(rboardName, (String)args[2], (Integer)args[3]),
+			                                                  (Long data, Throwable except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard addandget failed:" + except.getMessage());
 					except.printStackTrace();
@@ -262,9 +262,9 @@ public class RboardCommand {
 			for (int j = 2; j < args.length; j += 1) {
 				objs[j - 2] = (String)args[j];
 			}
-			MonumentaRedisSyncAPI.runWhenAvailable(plugin,
-					RBoardAPI.getAndReset(rboardName, objs),
-					(Map<String, String> data, Exception except) -> {
+			MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin,
+			                                                  RBoardAPI.getAndReset(rboardName, objs),
+			                                                  (Map<String, String> data, Throwable except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard getandreset failed:" + except.getMessage());
 					except.printStackTrace();
