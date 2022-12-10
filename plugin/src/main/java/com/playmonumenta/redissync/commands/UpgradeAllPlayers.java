@@ -1,20 +1,17 @@
 package com.playmonumenta.redissync.commands;
 
-import java.util.Iterator;
-import java.util.Set;
-import java.util.UUID;
-
 import com.playmonumenta.redissync.MonumentaRedisSync;
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI.RedisPlayerData;
-
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitRunnable;
-
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class UpgradeAllPlayers {
 	public static void register(MonumentaRedisSync plugin) {

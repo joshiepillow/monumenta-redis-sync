@@ -1,17 +1,14 @@
 package com.playmonumenta.redissync.utils;
 
-import java.util.Map;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
+import java.util.Map;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
-
-import net.kyori.adventure.text.Component;
 
 public class ScoreboardUtils {
 	@Deprecated

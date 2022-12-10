@@ -1,11 +1,9 @@
 package com.playmonumenta.redissync.commands;
 
-import java.util.logging.Level;
-
 import com.playmonumenta.redissync.MonumentaRedisSync;
-
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
+import java.util.logging.Level;
 
 public class ChangeLogLevel {
 	public static void register(MonumentaRedisSync plugin) {

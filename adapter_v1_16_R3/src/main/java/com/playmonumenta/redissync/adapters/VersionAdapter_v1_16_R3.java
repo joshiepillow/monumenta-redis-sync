@@ -1,16 +1,5 @@
 package com.playmonumenta.redissync.adapters;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import javax.annotation.Nullable;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -20,13 +9,15 @@ import com.google.gson.stream.JsonReader;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
-
-import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_16_R3.CraftServer;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_16_R3.scoreboard.CraftScoreboard;
-import org.bukkit.entity.Player;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import net.minecraft.server.v1_16_R3.AdvancementDataPlayer;
 import net.minecraft.server.v1_16_R3.DataFixTypes;
 import net.minecraft.server.v1_16_R3.EntityPlayer;
@@ -41,6 +32,11 @@ import net.minecraft.server.v1_16_R3.Scoreboard;
 import net.minecraft.server.v1_16_R3.ScoreboardObjective;
 import net.minecraft.server.v1_16_R3.ScoreboardScore;
 import net.minecraft.server.v1_16_R3.SharedConstants;
+import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.v1_16_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_16_R3.scoreboard.CraftScoreboard;
+import org.bukkit.entity.Player;
 
 public class VersionAdapter_v1_16_R3 implements VersionAdapter {
 	private static Gson advancementsGson = null;

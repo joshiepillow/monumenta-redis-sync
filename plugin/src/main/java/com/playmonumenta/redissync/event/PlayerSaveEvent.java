@@ -1,12 +1,9 @@
 package com.playmonumenta.redissync.event;
 
+import com.google.gson.JsonObject;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
-
-import com.google.gson.JsonObject;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;

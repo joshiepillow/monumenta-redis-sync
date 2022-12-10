@@ -1,15 +1,13 @@
 package com.playmonumenta.redissync;
 
+import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
+import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
+import com.playmonumenta.redissync.adapters.VersionAdapter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
-
-import com.destroystokyo.paper.event.player.PlayerAdvancementDataLoadEvent;
-import com.destroystokyo.paper.event.player.PlayerDataLoadEvent;
-import com.playmonumenta.redissync.adapters.VersionAdapter;
-
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

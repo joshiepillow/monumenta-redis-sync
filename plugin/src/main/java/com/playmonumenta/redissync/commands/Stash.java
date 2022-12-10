@@ -1,15 +1,13 @@
 package com.playmonumenta.redissync.commands;
 
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
-
-import org.bukkit.command.ProxiedCommandSender;
-import org.bukkit.entity.Player;
-
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.MultiLiteralArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
+import org.bukkit.command.ProxiedCommandSender;
+import org.bukkit.entity.Player;
 
 public class Stash {
 	public static void register() {

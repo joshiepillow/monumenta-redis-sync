@@ -1,11 +1,5 @@
 package com.playmonumenta.redissync;
 
-import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.annotation.Nullable;
-
 import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.commands.ChangeLogLevel;
 import com.playmonumenta.redissync.commands.PlayerHistory;
@@ -16,7 +10,10 @@ import com.playmonumenta.redissync.commands.RemoteDataCommand;
 import com.playmonumenta.redissync.commands.Stash;
 import com.playmonumenta.redissync.commands.TransferServer;
 import com.playmonumenta.redissync.commands.UpgradeAllPlayers;
-
+import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;

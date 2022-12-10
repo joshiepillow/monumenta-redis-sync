@@ -1,14 +1,13 @@
 package com.playmonumenta.redissync;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.codec.RedisCodec;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 public class RedisAPI {
 	private static final class StringByteCodec implements RedisCodec<String, byte[]> {

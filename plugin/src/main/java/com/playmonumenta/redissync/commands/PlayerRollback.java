@@ -1,15 +1,13 @@
 package com.playmonumenta.redissync.commands;
 
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
-
-import org.bukkit.entity.Player;
-
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
 import dev.jorel.commandapi.arguments.IntegerArgument;
+import org.bukkit.entity.Player;
 
 public class PlayerRollback {
 	public static void register() {

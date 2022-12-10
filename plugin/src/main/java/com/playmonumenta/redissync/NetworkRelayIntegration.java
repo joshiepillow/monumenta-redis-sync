@@ -1,17 +1,14 @@
 package com.playmonumenta.redissync;
 
-import java.util.Iterator;
-import java.util.Set;
-import java.util.UUID;
-import java.util.logging.Logger;
-
-import javax.annotation.Nullable;
-
 import com.google.gson.JsonObject;
 import com.playmonumenta.networkrelay.GatherHeartbeatDataEvent;
 import com.playmonumenta.networkrelay.NetworkRelayAPI;
 import com.playmonumenta.networkrelay.NetworkRelayMessageEvent;
-
+import java.util.Iterator;
+import java.util.Set;
+import java.util.UUID;
+import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

@@ -1,11 +1,8 @@
 package com.playmonumenta.redissync.adapters;
 
-import java.io.IOException;
-
-import javax.annotation.Nullable;
-
 import com.google.gson.JsonObject;
-
+import java.io.IOException;
+import javax.annotation.Nullable;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;

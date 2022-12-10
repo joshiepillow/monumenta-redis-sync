@@ -1,12 +1,11 @@
 package com.playmonumenta.redissync;
 
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import io.lettuce.core.api.async.RedisAsyncCommands;
 
 public class RBoardAPI {
 

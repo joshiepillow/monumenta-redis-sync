@@ -1,9 +1,7 @@
 package com.playmonumenta.redissync;
 
-import java.util.UUID;
-
 import io.lettuce.core.api.async.RedisAsyncCommands;
-
+import java.util.UUID;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;

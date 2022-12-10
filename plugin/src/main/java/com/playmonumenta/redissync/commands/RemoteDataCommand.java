@@ -1,17 +1,14 @@
 package com.playmonumenta.redissync.commands;
 
-import java.util.Map;
-import java.util.UUID;
-
 import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
 import com.playmonumenta.redissync.RemoteDataAPI;
-
-import org.bukkit.plugin.Plugin;
-
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.TextArgument;
+import java.util.Map;
+import java.util.UUID;
+import org.bukkit.plugin.Plugin;
 
 public class RemoteDataCommand {
 	public static void register(Plugin plugin) {
