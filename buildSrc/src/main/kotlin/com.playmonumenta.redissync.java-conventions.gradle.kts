@@ -8,7 +8,7 @@ plugins {
 repositories {
     mavenLocal()
     maven {
-        url = uri("https://papermc.io/repo/repository/maven-public/")
+        url = uri("https://repo.papermc.io/repository/maven-public/")
     }
 
     maven {
@@ -34,8 +34,8 @@ repositories {
 }
 
 group = "com.playmonumenta.redissync"
-java.sourceCompatibility = JavaVersion.VERSION_16
-java.targetCompatibility = JavaVersion.VERSION_16
+java.sourceCompatibility = JavaVersion.VERSION_17
+java.targetCompatibility = JavaVersion.VERSION_17
 
 tasks.withType<JavaCompile>() {
     options.encoding = "UTF-8"
@@ -43,7 +43,7 @@ tasks.withType<JavaCompile>() {
 
 pmd {
     isConsoleOutput = true
-    toolVersion = "6.48.0"
-    ruleSets = listOf("pmd-ruleset.xml")
+    toolVersion = "6.41.0"
+    ruleSets = listOf("$rootDir/pmd-ruleset.xml")
     setIgnoreFailures(true)
 }

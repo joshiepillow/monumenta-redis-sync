@@ -20,12 +20,11 @@ plugins {
 
 dependencies {
     implementation(project(":adapter_api"))
-    implementation(project(":adapter_v1_16_R3"))
     implementation(project(":adapter_v1_18_R2", "reobf"))
     implementation("io.lettuce:lettuce-core:5.3.5.RELEASE")
     compileOnly("net.md-5:bungeecord-api:1.15-SNAPSHOT")
     compileOnly("com.playmonumenta:monumenta-network-relay:1.0")
-    compileOnly("com.destroystokyo.paper:paper:1.16.5-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
     compileOnly("dev.jorel.CommandAPI:commandapi-core:6.0.0")
     errorprone("com.google.errorprone:error_prone_core:2.10.0")
     errorprone("com.uber.nullaway:nullaway:0.9.5")
@@ -55,7 +54,7 @@ version = rootProject.version
 bukkit {
     load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
     main = "com.playmonumenta.redissync.MonumentaRedisSync"
-    apiVersion = "1.16"
+    apiVersion = "1.18"
     name = "MonumentaRedisSync"
     authors = listOf("Combustible")
     depend = listOf("CommandAPI")

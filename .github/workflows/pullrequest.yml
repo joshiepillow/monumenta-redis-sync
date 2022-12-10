@@ -33,20 +33,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-build-
 
-    - name: Build Paper
-      run: |
-        if [[ ! -d ~/.m2/repository/com/destroystokyo/paper ]]; then
-
-          git clone https://github.com/TeamMonumenta/Paper.git
-          cd Paper
-          git checkout 1.16
-          ./paper jar
-          git checkout 1.17
-          ./gradlew applyPatches
-          ./gradlew reobfJar
-          ./gradlew publishToMavenLocal
-        fi
-
   build:
     name: Build plugin
     needs: deps
@@ -92,9 +78,8 @@ jobs:
         set +o pipefail
         cat compile.log | grep '^\[WARNING\].*\.java' | reviewdog -efm="[WARNING] %f:[%l,%c] %m" -name="compiler-warnings" -reporter=github-pr-check
         cat ./adapter_api/build/reports/checkstyle/main.xml | reviewdog -f=checkstyle -name="checkstyle (adapterapi)" -reporter=github-pr-check
-        cat ./adapter_v1_16_R3/build/reports/checkstyle/main.xml | reviewdog -f=checkstyle -name="checkstyle (v1_16_R3)" -reporter=github-pr-check
         cat ./adapter_v1_18_R2/build/reports/checkstyle/main.xml | reviewdog -f=checkstyle -name="checkstyle (v1_18_R2)" -reporter=github-pr-check
         cat ./plugin/build/reports/checkstyle/main.xml | reviewdog -f=checkstyle -name="checkstyle (plugin)" -reporter=github-pr-check
         cat ./example/build/reports/checkstyle/main.xml | reviewdog -f=checkstyle -name="checkstyle (example)" -reporter=github-pr-check
-        cat ./plugin/build/reports/pmd/main.xml ./example/build/reports/pmd/main.xml ./adapter_v1_18_R2/build/reports/pmd/main.xml ./adapter_api/build/reports/pmd/main.xml ./adapter_v1_16_R3/build/reports/pmd/main.xml | reviewdog -efm='%+P<file name="%f">' -efm='%W<violation beginline="%l%.%#begincolumn="%c%.%#' -efm='%-C<%.%#' -efm='%+C%.%#' -efm='%-Q' -name="pmd" -reporter=github-pr-check
+        cat ./plugin/build/reports/pmd/main.xml ./example/build/reports/pmd/main.xml ./adapter_v1_18_R2/build/reports/pmd/main.xml ./adapter_api/build/reports/pmd/main.xml | reviewdog -efm='%+P<file name="%f">' -efm='%W<violation beginline="%l%.%#begincolumn="%c%.%#' -efm='%-C<%.%#' -efm='%+C%.%#' -efm='%-Q' -name="pmd" -reporter=github-pr-check
 

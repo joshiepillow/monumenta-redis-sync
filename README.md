@@ -50,7 +50,6 @@ Here's a list of currently supported things:
 
 Planned features:
 - Automatic config file creation
-- API documentation
 - Storage of player stats data
 
 ## Example Dependant Plugin
@@ -61,22 +60,22 @@ bungeecord.
 
 ## Dependencies
 
-This plugin requires a Paper-based minecraft server, compiled with a specific
-patch to enable high-performance access to player data save/load events. This
+This plugin requires a Paper-based minecraft server, compiled with specific
+patches to enable high-performance access to player data save/load events. This
 is a significantly more cumbersome requirement than most plugins.
 
-The patch is available here:
-https://github.com/TeamMonumenta/Paper/commit/4d1bb15aa59602f32182c20ce97cc6fd10d0c9f9
-
-Similar patches exist for 1.13, 1.15, 1.16.3 and 1.16.4. Other versions are relatively
-easy to get working too.
+A fork of paper with these patches (and others) can be found here:
+https://github.com/TeamMonumenta/monumenta-paperfork
 
 If you are interested in getting this working / trying it out yourself, join
 the Monumenta Discord (https://discord.gg/eep9qcu) and message @Combustible.
 
-This plugin also requires CommandAPI 4.3. Other versions might also work, worth
+This plugin also requires CommandAPI 6.0. Other versions might also work, worth
 testing. If you try with a version that doesn't work (log errors, commands
 don't work, etc.) it's not going to damage your player data.
+
+The current version of this plugin requires Minecraft 1.18.2. Other versions
+could be easily supported, just ask.
 
 ## Maven dependency
 ```xml
@@ -91,7 +90,7 @@ don't work, etc.) it's not going to damage your player data.
         <dependency>
             <groupId>com.playmonumenta</groupId>
             <artifactId>redissync</artifactId>
-            <version>1.7</version>
+            <version>3.10</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
