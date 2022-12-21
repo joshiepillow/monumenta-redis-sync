@@ -6,7 +6,6 @@ import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -17,16 +16,16 @@ import org.bukkit.plugin.Plugin;
 public class PlayerHistory {
 	public static void register(Plugin plugin) {
 		new CommandAPICommand("playerhistory")
-			.withArguments(new EntitySelectorArgument("player", EntitySelector.ONE_PLAYER))
+			.withArguments(new EntitySelectorArgument.OnePlayer("player"))
 			.withPermission(CommandPermission.fromString("monumenta.command.playerhistory"))
 			.executes((sender, args) -> {
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by players");
+					throw CommandAPI.failWithString("This command can only be run by players");
 				}
 				try {
 					playerHistory(plugin, sender, (Player)args[0]);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();

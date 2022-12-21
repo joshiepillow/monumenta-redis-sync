@@ -24,12 +24,12 @@ public class Stash {
 					sender = ((ProxiedCommandSender)sender).getCallee();
 				}
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by/as players");
+					throw CommandAPI.failWithString("This command can only be run by/as players");
 				}
 				try {
 					MonumentaRedisSyncAPI.stashPut((Player)sender, null);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();
@@ -44,12 +44,12 @@ public class Stash {
 					sender = ((ProxiedCommandSender)sender).getCallee();
 				}
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by/as players");
+					throw CommandAPI.failWithString("This command can only be run by/as players");
 				}
 				try {
 					MonumentaRedisSyncAPI.stashPut((Player)sender, (String)args[1]);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();
@@ -64,12 +64,12 @@ public class Stash {
 					sender = ((ProxiedCommandSender)sender).getCallee();
 				}
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by/as players");
+					throw CommandAPI.failWithString("This command can only be run by/as players");
 				}
 				try {
 					MonumentaRedisSyncAPI.stashGet((Player)sender, null);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();
@@ -84,12 +84,12 @@ public class Stash {
 					sender = ((ProxiedCommandSender)sender).getCallee();
 				}
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by/as players");
+					throw CommandAPI.failWithString("This command can only be run by/as players");
 				}
 				try {
 					MonumentaRedisSyncAPI.stashGet((Player)sender, (String)args[1]);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();
@@ -101,12 +101,12 @@ public class Stash {
 			.withPermission(perms)
 			.executes((sender, args) -> {
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by players");
+					throw CommandAPI.failWithString("This command can only be run by players");
 				}
 				try {
 					MonumentaRedisSyncAPI.stashInfo((Player)sender, null);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();
@@ -118,12 +118,12 @@ public class Stash {
 			.withPermission(perms)
 			.executes((sender, args) -> {
 				if (!(sender instanceof Player)) {
-					CommandAPI.fail("This command can only be run by players");
+					throw CommandAPI.failWithString("This command can only be run by players");
 				}
 				try {
 					MonumentaRedisSyncAPI.stashInfo((Player)sender, (String)args[1]);
 				} catch (Exception ex) {
-					CommandAPI.fail(ex.getMessage());
+					throw CommandAPI.failWithString(ex.getMessage());
 				}
 			}
 		).register();

@@ -25,7 +25,7 @@ public class UpgradeAllPlayers {
 						try {
 							run(plugin);
 						} catch (Exception ex) {
-							CommandAPI.fail(ex.getMessage());
+							throw CommandAPI.failWithString(ex.getMessage());
 						}
 					})
 			)).register();

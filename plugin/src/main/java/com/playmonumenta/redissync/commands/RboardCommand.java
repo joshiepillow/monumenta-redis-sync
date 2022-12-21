@@ -8,7 +8,6 @@ import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.Argument;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument.EntitySelector;
 import dev.jorel.commandapi.arguments.FunctionArgument;
 import dev.jorel.commandapi.arguments.IntegerArgument;
 import dev.jorel.commandapi.arguments.LiteralArgument;
@@ -37,7 +36,7 @@ public class RboardCommand {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static void regWrapper(List<Argument> arguments, RboardAction exec) {
+	private static void regWrapper(List<Argument<?>> arguments, RboardAction exec) {
 		CommandExecutor cmdExec = (sender, args) -> {
 			try {
 				if (args[0] instanceof Collection<?>) {
@@ -46,7 +45,7 @@ public class RboardCommand {
 					}
 				} else {
 					if (!((String)args[0]).startsWith("$")) {
-						CommandAPI.fail("Fakeplayer names must start with a $");
+						throw CommandAPI.failWithString("Fakeplayer names must start with a $");
 					} else {
 						exec.run(sender, args, (String)args[0], (String)args[0]);
 					}
@@ -54,13 +53,13 @@ public class RboardCommand {
 			} catch (WrapperCommandSyntaxException ex) {
 				throw ex;
 			} catch (Exception ex) {
-				CommandAPI.fail(ex.getMessage());
+				throw CommandAPI.failWithString(ex.getMessage());
 			}
 		};
 
 		/* Replace the players argument with a simple string for fakeplayers */
-		List<Argument> fakePlayerArguments = new ArrayList<>(40);
-		for (Argument arg : arguments) {
+		List<Argument<?>> fakePlayerArguments = new ArrayList<>(40);
+		for (Argument<?> arg : arguments) {
 			if (arg.getNodeName().equals("players")) {
 				fakePlayerArguments.add(new TextArgument("name"));
 			} else {
@@ -86,20 +85,19 @@ public class RboardCommand {
 	}
 
 	public static void register(Plugin plugin) {
-		List<Argument> arguments = new ArrayList<Argument>(40);
+		List<Argument<?>> arguments = new ArrayList<>(40);
 
 		/********************* Set *********************/
 		RboardAction action = (sender, args, rboardName, scoreboardName) -> {
-			Map<String, String> vals = new LinkedHashMap<>();
+			Map<String, String> values = new LinkedHashMap<>();
 			for (int i = 1; i < args.length; i += 2) {
-				vals.put((String)args[i], Integer.toString((Integer)args[i + 1]));
+				values.put((String)args[i], Integer.toString((Integer)args[i + 1]));
 			}
-			RBoardAPI.set(rboardName, vals);
+			RBoardAPI.set(rboardName, values);
 		};
 
-		arguments.clear();
 		arguments.add(new LiteralArgument("set"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		for (int i = 0; i < 6; i++) {
 			arguments.add(new ObjectiveArgument("objective" + i));
 			arguments.add(new IntegerArgument("value" + i));
@@ -108,16 +106,16 @@ public class RboardCommand {
 
 		/********************* Store *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			Map<String, String> vals = new LinkedHashMap<>();
+			Map<String, String> values = new LinkedHashMap<>();
 			for (int i = 1; i < args.length; i += 1) {
-				vals.put((String)args[i], Integer.toString(ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[i])));
+				values.put((String)args[i], Integer.toString(ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[i])));
 			}
-			RBoardAPI.set(rboardName, vals);
+			RBoardAPI.set(rboardName, values);
 		};
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("store"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		for (int i = 0; i < 6; i++) {
 			arguments.add(new ObjectiveArgument("objective" + i));
 			regWrapper(arguments, action);
@@ -126,48 +124,45 @@ public class RboardCommand {
 		/********************* Add *********************/
 		arguments.clear();
 		arguments.add(new LiteralArgument("add"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		arguments.add(new ObjectiveArgument("objective"));
 		arguments.add(new IntegerArgument("value"));
-		regWrapper(arguments, (sender, args, rboardName, scoreboardName) -> {
-			RBoardAPI.add(rboardName, (String)args[1], (Integer)args[2]);
-		});
+		regWrapper(arguments, (sender, args, rboardName, scoreboardName) ->
+			RBoardAPI.add(rboardName, (String)args[1], (Integer)args[2]));
 
 		/********************* AddScore *********************/
 		arguments.clear();
 		arguments.add(new LiteralArgument("addscore"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		arguments.add(new ObjectiveArgument("objective"));
 		arguments.add(new ObjectiveArgument("objectiveToAdd"));
-		regWrapper(arguments, (sender, args, rboardName, scoreboardName) -> {
-			RBoardAPI.add(rboardName, (String)args[1], ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[2]));
-		});
+		regWrapper(arguments, (sender, args, rboardName, scoreboardName) ->
+			RBoardAPI.add(rboardName, (String)args[1], ScoreboardUtils.getScoreboardValue(scoreboardName, (String)args[2])));
 
 		/********************* Reset *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			String[] vals = new String[args.length - 1];
+			String[] values = new String[args.length - 1];
 			for (int i = 1; i < args.length; i += 1) {
-				vals[i - 1] = (String)args[i];
+				values[i - 1] = (String)args[i];
 			}
-			RBoardAPI.reset(rboardName, vals);
+			RBoardAPI.reset(rboardName, values);
 		};
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("reset"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		for (int i = 0; i < 6; i++) {
 			arguments.add(new ObjectiveArgument("objective" + i));
 			regWrapper(arguments, action);
 		}
 
 		/********************* ResetAll *********************/
-		action = (sender, args, rboardName, scoreboardName) -> {
+		action = (sender, args, rboardName, scoreboardName) ->
 			RBoardAPI.resetAll(rboardName);
-		};
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("resetall"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		regWrapper(arguments, action);
 
 		/********************* GetAll *********************/
@@ -179,34 +174,34 @@ public class RboardCommand {
 					plugin.getLogger().severe("rboard getall failed:" + except.getMessage());
 					except.printStackTrace();
 				} else {
-					String output = "[";
+					StringBuilder output = new StringBuilder("[");
 					boolean first = true;
 					for (Map.Entry<String, String> entry : data.entrySet()) {
 						if (!first) {
-							output += " ";
+							output.append(" ");
 						}
-						output += ChatColor.GOLD + entry.getKey() + ChatColor.WHITE + "=" + ChatColor.GREEN + entry.getValue();
+						output.append(ChatColor.GOLD).append(entry.getKey()).append(ChatColor.WHITE).append("=").append(ChatColor.GREEN).append(entry.getValue());
 						first = false;
 					}
-					output += ChatColor.WHITE + "]";
-					sender.sendMessage(output);
+					output.append(ChatColor.WHITE).append("]");
+					sender.sendMessage(output.toString());
 				}
 			});
 		};
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("getall"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		regWrapper(arguments, action);
 
 		/********************* Get *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			String[] objs = new String[args.length - 2];
+			String[] objects = new String[args.length - 2];
 			for (int j = 2; j < args.length; j += 1) {
-				objs[j - 2] = (String)args[j];
+				objects[j - 2] = (String)args[j];
 			}
 			MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin,
-			                                                  RBoardAPI.get(rboardName, objs),
+			                                                  RBoardAPI.get(rboardName, objects),
 			                                                  (Map<String, String> data, Throwable except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard get failed:" + except.getMessage());
@@ -224,7 +219,7 @@ public class RboardCommand {
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("get"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		arguments.add(new FunctionArgument("function"));
 		for (int i = 0; i < 15; i++) {
 			arguments.add(new ObjectiveArgument("objective" + i));
@@ -250,7 +245,7 @@ public class RboardCommand {
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("addandget"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		arguments.add(new FunctionArgument("function"));
 		arguments.add(new ObjectiveArgument("objective"));
 		arguments.add(new IntegerArgument("value"));
@@ -258,12 +253,12 @@ public class RboardCommand {
 
 		/********************* GetAndReset *********************/
 		action = (sender, args, rboardName, scoreboardName) -> {
-			String[] objs = new String[args.length - 2];
+			String[] objects = new String[args.length - 2];
 			for (int j = 2; j < args.length; j += 1) {
-				objs[j - 2] = (String)args[j];
+				objects[j - 2] = (String)args[j];
 			}
 			MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin,
-			                                                  RBoardAPI.getAndReset(rboardName, objs),
+			                                                  RBoardAPI.getAndReset(rboardName, objects),
 			                                                  (Map<String, String> data, Throwable except) -> {
 				if (except != null) {
 					plugin.getLogger().severe("rboard getandreset failed:" + except.getMessage());
@@ -281,7 +276,7 @@ public class RboardCommand {
 
 		arguments.clear();
 		arguments.add(new LiteralArgument("getandreset"));
-		arguments.add(new EntitySelectorArgument("players", EntitySelector.MANY_PLAYERS));
+		arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
 		arguments.add(new FunctionArgument("function"));
 		for (int i = 0; i < 6; i++) {
 			arguments.add(new ObjectiveArgument("objective" + i));

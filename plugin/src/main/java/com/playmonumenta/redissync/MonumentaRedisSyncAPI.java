@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import com.playmonumenta.redissync.adapters.VersionAdapter.SaveData;
 import com.playmonumenta.redissync.event.PlayerServerTransferEvent;
 import com.playmonumenta.redissync.utils.Trie;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.TransactionResult;
@@ -108,6 +109,8 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static final int TIMEOUT_SECONDS = 10;
+	public static final ArgumentSuggestions SUGGESTIONS_ALL_CACHED_PLAYER_NAMES = ArgumentSuggestions.strings((info) ->
+		MonumentaRedisSyncAPI.getAllCachedPlayerNames().toArray(String[]::new));
 
 	private static final Trie<UUID> mNameToUuidTrie = new Trie<>();
 	private static final Map<String, UUID> mNameToUuid = new ConcurrentHashMap<>();

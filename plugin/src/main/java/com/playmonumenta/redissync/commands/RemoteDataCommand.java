@@ -15,7 +15,7 @@ public class RemoteDataCommand {
 		new CommandAPICommand("remotedata")
 			.withPermission(CommandPermission.fromString("monumenta.command.remotedata"))
 			.withSubcommand(new CommandAPICommand("getall")
-				.withArguments(new TextArgument("player").replaceSuggestions((info) -> MonumentaRedisSyncAPI.getAllCachedPlayerNames().toArray(String[]::new)))
+				.withArguments(new TextArgument("player").replaceSuggestions(MonumentaRedisSyncAPI.SUGGESTIONS_ALL_CACHED_PLAYER_NAMES))
 				.executesPlayer((sender, args) -> {
 					String playerNameOrUUID = (String)args[0];
 					UUID uuid = MonumentaRedisSyncAPI.cachedNameToUuid(playerNameOrUUID);
@@ -23,15 +23,14 @@ public class RemoteDataCommand {
 						try {
 							uuid = UUID.fromString(playerNameOrUUID);
 						} catch (Exception ex) {
-							CommandAPI.fail("Argument must be a player name with correct capitalization or a UUID");
-							return; // Needed for proper nullaway exit detection
+							throw CommandAPI.failWithString("Argument must be a player name with correct capitalization or a UUID");
 						}
 					}
 
 					String name = MonumentaRedisSyncAPI.cachedUuidToName(uuid);
 					UUID finalUUID = uuid;
 					if (name == null) {
-						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
+						throw CommandAPI.failWithString("Got uuid '" + uuid + "' that matches no known player");
 					}
 
 					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.getAll(finalUUID), (data, ex) -> {
@@ -50,7 +49,7 @@ public class RemoteDataCommand {
 					});
 				}))
 			.withSubcommand(new CommandAPICommand("get")
-				.withArguments(new TextArgument("player").replaceSuggestions((info) -> MonumentaRedisSyncAPI.getAllCachedPlayerNames().toArray(String[]::new)))
+				.withArguments(new TextArgument("player").replaceSuggestions(MonumentaRedisSyncAPI.SUGGESTIONS_ALL_CACHED_PLAYER_NAMES))
 				.withArguments(new TextArgument("key"))
 				.executesPlayer((sender, args) -> {
 					String playerNameOrUUID = (String)args[0];
@@ -60,15 +59,14 @@ public class RemoteDataCommand {
 						try {
 							uuid = UUID.fromString(playerNameOrUUID);
 						} catch (Exception ex) {
-							CommandAPI.fail("Argument must be a player name with correct capitalization or a UUID");
-							return; // Needed for proper nullaway exit detection
+							throw CommandAPI.failWithString("Argument must be a player name with correct capitalization or a UUID");
 						}
 					}
 
 					String name = MonumentaRedisSyncAPI.cachedUuidToName(uuid);
 					UUID finalUUID = uuid;
 					if (name == null) {
-						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
+						throw CommandAPI.failWithString("Got uuid '" + uuid + "' that matches no known player");
 					}
 
 					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.get(finalUUID, key), (data, ex) -> {
@@ -84,7 +82,7 @@ public class RemoteDataCommand {
 					});
 				}))
 			.withSubcommand(new CommandAPICommand("set")
-				.withArguments(new TextArgument("player").replaceSuggestions((info) -> MonumentaRedisSyncAPI.getAllCachedPlayerNames().toArray(String[]::new)))
+				.withArguments(new TextArgument("player").replaceSuggestions(MonumentaRedisSyncAPI.SUGGESTIONS_ALL_CACHED_PLAYER_NAMES))
 				.withArguments(new TextArgument("key"))
 				.withArguments(new TextArgument("value"))
 				.executesPlayer((sender, args) -> {
@@ -96,15 +94,14 @@ public class RemoteDataCommand {
 						try {
 							uuid = UUID.fromString(playerNameOrUUID);
 						} catch (Exception ex) {
-							CommandAPI.fail("Argument must be a player name with correct capitalization or a UUID");
-							return; // Needed for proper nullaway exit detection
+							throw CommandAPI.failWithString("Argument must be a player name with correct capitalization or a UUID");
 						}
 					}
 
 					String name = MonumentaRedisSyncAPI.cachedUuidToName(uuid);
 					UUID finalUUID = uuid;
 					if (name == null) {
-						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
+						throw CommandAPI.failWithString("Got uuid '" + uuid + "' that matches no known player");
 					}
 
 					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.set(finalUUID, key, value), (data, ex) -> {
@@ -117,7 +114,7 @@ public class RemoteDataCommand {
 					});
 				}))
 			.withSubcommand(new CommandAPICommand("del")
-				.withArguments(new TextArgument("player").replaceSuggestions((info) -> MonumentaRedisSyncAPI.getAllCachedPlayerNames().toArray(String[]::new)))
+				.withArguments(new TextArgument("player").replaceSuggestions(MonumentaRedisSyncAPI.SUGGESTIONS_ALL_CACHED_PLAYER_NAMES))
 				.withArguments(new TextArgument("key"))
 				.executesPlayer((sender, args) -> {
 					String playerNameOrUUID = (String)args[0];
@@ -127,15 +124,14 @@ public class RemoteDataCommand {
 						try {
 							uuid = UUID.fromString(playerNameOrUUID);
 						} catch (Exception ex) {
-							CommandAPI.fail("Argument must be a player name with correct capitalization or a UUID");
-							return; // Needed for proper nullaway exit detection
+							throw CommandAPI.failWithString("Argument must be a player name with correct capitalization or a UUID");
 						}
 					}
 
 					String name = MonumentaRedisSyncAPI.cachedUuidToName(uuid);
 					UUID finalUUID = uuid;
 					if (name == null) {
-						CommandAPI.fail("Got uuid '" + uuid + "' that matches no known player");
+						throw CommandAPI.failWithString("Got uuid '" + uuid + "' that matches no known player");
 					}
 
 					MonumentaRedisSyncAPI.runOnMainThreadWhenComplete(plugin, RemoteDataAPI.del(finalUUID, key), (data, ex) -> {
