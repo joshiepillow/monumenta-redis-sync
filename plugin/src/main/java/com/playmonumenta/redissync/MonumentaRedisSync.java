@@ -10,6 +10,8 @@ import com.playmonumenta.redissync.commands.RemoteDataCommand;
 import com.playmonumenta.redissync.commands.Stash;
 import com.playmonumenta.redissync.commands.TransferServer;
 import com.playmonumenta.redissync.commands.UpgradeAllPlayers;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIConfig;
 import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,6 +48,14 @@ public class MonumentaRedisSync extends JavaPlugin {
 
 	@Override
 	public void onLoad() {
+		// Load the CommandAPI. We enable verbose logging and allow the CommandAPI
+		// to generate a file command_registration.json for debugging purposes
+		CommandAPI.onLoad(
+			new CommandAPIConfig()
+				.verboseOutput(true)
+				.dispatcherFile(new File(getDataFolder(), "redissync_command_registration.json"))
+		);
+
 		loadVersionAdapter();
 
 		/*
@@ -71,6 +81,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 			this.setEnabled(false);
 			return;
 		}
+
+		// Enable the CommandAPI
+		CommandAPI.onEnable(this);
 
 		/* Needed to tell Netty where it moved to */
 		System.setProperty("com.playmonumenta.redissync.internal.io.netty", "com.playmonumenta.redissync.internal");

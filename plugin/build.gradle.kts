@@ -25,7 +25,7 @@ dependencies {
     compileOnly("net.md-5:bungeecord-api:1.15-SNAPSHOT")
     compileOnly("com.playmonumenta:monumenta-network-relay:1.0")
     compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
-    compileOnly("dev.jorel.CommandAPI:commandapi-core:8.7.0")
+    implementation("dev.jorel.CommandAPI:commandapi-shade:8.7.0")
     errorprone("com.google.errorprone:error_prone_core:2.10.0")
     errorprone("com.uber.nullaway:nullaway:0.9.5")
 }
@@ -57,7 +57,7 @@ bukkit {
     apiVersion = "1.18"
     name = "MonumentaRedisSync"
     authors = listOf("Combustible")
-    depend = listOf("CommandAPI")
+    depend = listOf()
     softDepend = listOf("MonumentaNetworkRelay")
 }
 
@@ -101,6 +101,7 @@ tasks {
        relocate("reactor.adapter", "com.playmonumenta.redissync.internal.reactor.adapter")
        relocate("reactor.core", "com.playmonumenta.redissync.internal.reactor.core")
        relocate("reactor.util", "com.playmonumenta.redissync.internal.reactor.util")
+       relocate("dev.jorel.commandapi", "com.playmonumenta.redissync.internal.dev.jorel.commandapi")
     }
 }
 
