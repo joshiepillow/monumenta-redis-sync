@@ -90,7 +90,7 @@ could be easily supported, just ask.
         <dependency>
             <groupId>com.playmonumenta</groupId>
             <artifactId>redissync</artifactId>
-            <version>4.0</version>
+            <version>4.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
