@@ -21,6 +21,7 @@ plugins {
 dependencies {
     implementation(project(":adapter_api"))
     implementation(project(":adapter_v1_18_R2", "reobf"))
+    implementation(project(":adapter_v1_19_R2", "reobf"))
     implementation("io.lettuce:lettuce-core:5.3.5.RELEASE")
     compileOnly("net.md-5:bungeecord-api:1.15-SNAPSHOT")
     compileOnly("com.playmonumenta:monumenta-network-relay:1.0")
