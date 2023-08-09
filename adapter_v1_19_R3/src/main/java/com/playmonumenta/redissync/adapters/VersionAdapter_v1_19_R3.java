@@ -203,7 +203,7 @@ public class VersionAdapter_v1_19_R3 implements VersionAdapter {
 		dynamic = dynamic.remove("DataVersion");
 
 		if (advancementsGson == null) {
-			Field gsonField = PlayerAdvancements.class.getDeclaredField("c");
+			Field gsonField = PlayerAdvancements.class.getDeclaredField("b");
 			gsonField.setAccessible(true);
 			advancementsGson = (Gson)gsonField.get(null);
 		}
