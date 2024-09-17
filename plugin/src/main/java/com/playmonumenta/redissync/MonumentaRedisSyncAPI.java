@@ -527,90 +527,6 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<String> getRemoteData(UUID uuid, String key) throws Exception {
-		return RemoteDataAPI.get(uuid, key);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Boolean> setRemoteData(UUID uuid, String key, String value) throws Exception {
-		return RemoteDataAPI.set(uuid, key, value);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Long> incrementRemoteData(UUID uuid, String key, int incby) throws Exception {
-		return RemoteDataAPI.increment(uuid, key, incby);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Boolean> delRemoteData(UUID uuid, String key) throws Exception {
-		return RemoteDataAPI.del(uuid, key);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, String>> getAllRemoteData(UUID uuid) throws Exception {
-		return remoteDataGetAll(uuid);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<String> remoteDataGet(UUID uuid, String key) {
-		return RemoteDataAPI.get(uuid, key);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, String>> remoteDataGetMulti(UUID uuid, String... keys) {
-		return RemoteDataAPI.getMulti(uuid, keys);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Boolean> remoteDataSet(UUID uuid, String key, String value) {
-		return RemoteDataAPI.set(uuid, key, value);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Long> remoteDataIncrement(UUID uuid, String key, int incby) {
-		return RemoteDataAPI.increment(uuid, key, incby);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Boolean> remoteDataDel(UUID uuid, String key) {
-		return RemoteDataAPI.del(uuid, key);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, String>> remoteDataGetAll(UUID uuid) {
-		return RemoteDataAPI.getAll(uuid);
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static String getRedisRemoteDataPath(Player player) {
-		return RemoteDataAPI.getRedisPath(player.getUniqueId());
-	}
-
-	/** @deprecated - use RemoteDataAPI */
-	@Deprecated
-	public static String getRedisRemoteDataPath(UUID uuid) {
-		return RemoteDataAPI.getRedisPath(uuid);
-	}
-
-	/** @deprecated - use ConfigAPI */
-	@Deprecated
-	public static String getServerDomain() {
-		return ConfigAPI.getServerDomain();
-	}
-
 	public static String getRedisDataPath(UUID uuid, int profileIndex) {
 		return String.format("%s:playerdata:%s:profile_%s:data", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
@@ -869,7 +785,7 @@ public class MonumentaRedisSyncAPI {
 
 	/**
 	 * Gets player location data for a world
-	 *
+	 * <p>
 	 * Only valid if the player is currently on this shard.
 	 *
 	 * @param player  Player's to get data for
@@ -889,24 +805,6 @@ public class MonumentaRedisSyncAPI {
 		}
 
 		return PlayerWorldData.fromJson(worldShardData, world);
-	}
-
-	/** @deprecated - use LeaderboardAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, Integer>> getLeaderboard(String objective, long start, long stop, boolean ascending) {
-		return LeaderboardAPI.get(objective, start, stop, ascending);
-	}
-
-	/** @deprecated - use LeaderboardAPI */
-	@Deprecated
-	public static void updateLeaderboardAsync(String objective, String name, long value) {
-		LeaderboardAPI.updateAsync(objective, name, value);
-	}
-
-	/** @deprecated - use LeaderboardAPI */
-	@Deprecated
-	public static String getRedisLeaderboardPath(String objective) {
-		return LeaderboardAPI.getRedisPath(objective);
 	}
 
 	/** Future returns non-null if successfully loaded data, null on error */
@@ -990,10 +888,10 @@ public class MonumentaRedisSyncAPI {
 
 	/**
 	 * Gets a map of all player scoreboard values.
-	 *
+	 * <p>
 	 * If player is online, will pull them from the current scoreboard. This work will be done on the main thread (will take several milliseconds).
 	 * If player is offline, will pull them from the most recent redis save on an async thread, then compose them into a map (basically no main thread time)
-	 *
+	 * <p>
 	 * The return future will always complete on the main thread with either results or an exception.
 	 * Suggest chaining on .whenComplete((data, ex) -> your code) to do something with this data when complete
 	 */
@@ -1065,64 +963,6 @@ public class MonumentaRedisSyncAPI {
 		return commands.exec().thenApply((TransactionResult result) -> transformPlayerSaveResult(mrs, result)).toCompletableFuture();
 	}
 
-	/*********************************************************************************
-	 * rboard API
-	 */
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static String getRedisRboardPath(String name) throws Exception {
-		return RBoardAPI.getRedisPath(name);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Long> rboardSet(String name, Map<String, String> data) throws Exception {
-		return RBoardAPI.set(name, data);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Long> rboardAdd(String name, String key, long amount) throws Exception {
-		return RBoardAPI.add(name, key, amount);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, String>> rboardGet(String name, String... keys) throws Exception {
-		return RBoardAPI.get(name, keys);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, String>> rboardGetAndReset(String name, String... keys) throws Exception {
-		return RBoardAPI.getAndReset(name, keys);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<List<String>> rboardGetKeys(String name) throws Exception {
-		return RBoardAPI.getKeys(name);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Map<String, String>> rboardGetAll(String name) throws Exception {
-		return RBoardAPI.getAll(name);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Long> rboardReset(String name, String... keys) throws Exception {
-		return RBoardAPI.reset(name, keys);
-	}
-
-	/** @deprecated - use RBoardAPI */
-	@Deprecated
-	public static CompletableFuture<Long> rboardResetAll(String name) throws Exception {
-		return RBoardAPI.resetAll(name);
-	}
-
 	/*
 	 * rboard API
 	 *********************************************************************************/
@@ -1130,7 +970,7 @@ public class MonumentaRedisSyncAPI {
 	/**
 	 * If MonumentaNetworkRelay is installed, returns a list of all other shard names
 	 * that are currently up and valid transfer targets from this server.
-	 *
+	 * <p>
 	 * If MonumentaNetworkRelay is not installed, returns an empty array.
 	 */
 	public static String[] getOnlineTransferTargets() {
@@ -1139,9 +979,9 @@ public class MonumentaRedisSyncAPI {
 
 	/**
 	 * Runs the result of an asynchronous transaction on the main thread after it is completed
-	 *
+	 * <p>
 	 * Will always call the callback function eventually, even if the resulting transaction fails or is lost.
-	 *
+	 * <p>
 	 * When the function is called, either data will be non-null and exception null,
 	 * or data will be null and the exception will be non-null
 	 */
