@@ -611,28 +611,28 @@ public class MonumentaRedisSyncAPI {
 		return ConfigAPI.getServerDomain();
 	}
 
-	public static String getRedisDataPath(Player player) {
-		return getRedisDataPath(player.getUniqueId());
+	public static String getRedisDataPath(UUID uuid, int profileIndex) {
+		return String.format("%s:playerdata:%s:profile_%s:data", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
 
-	public static String getRedisDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:data", ConfigAPI.getServerDomain(), uuid.toString());
+	public static String getRedisHistoryPath(UUID uuid, int profileIndex) {
+		return String.format("%s:playerdata:%s:profile_%s:history", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
 
-	public static String getRedisHistoryPath(Player player) {
-		return getRedisHistoryPath(player.getUniqueId());
+	public static String getRedisPerShardDataPath(UUID uuid, int profileIndex) {
+		return String.format("%s:playerdata:%s:profile_%s:sharddata", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
 
-	public static String getRedisHistoryPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:history", ConfigAPI.getServerDomain(), uuid.toString());
+	public static String getRedisPluginDataPath(UUID uuid, int profileIndex) {
+		return String.format("%s:playerdata:%s:profile_%s:plugins", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
 
-	public static String getRedisPerShardDataPath(Player player) {
-		return getRedisPerShardDataPath(player.getUniqueId());
+	public static String getRedisAdvancementsPath(UUID uuid, int profileIndex) {
+		return String.format("%s:playerdata:%s:profile_%s:advancements", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
 
-	public static String getRedisPerShardDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:sharddata", ConfigAPI.getServerDomain(), uuid.toString());
+	public static String getRedisScoresPath(UUID uuid, int profileIndex) {
+		return String.format("%s:playerdata:%s:profile_%s:scores", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
 
 	public static String getRedisPerShardDataWorldKey(World world) {
@@ -641,31 +641,6 @@ public class MonumentaRedisSyncAPI {
 
 	public static String getRedisPerShardDataWorldKey(UUID worldUUID, String worldName) {
 		return worldUUID.toString() + ":" + worldName;
-	}
-
-
-	public static String getRedisPluginDataPath(Player player) {
-		return getRedisPluginDataPath(player.getUniqueId());
-	}
-
-	public static String getRedisPluginDataPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:plugins", ConfigAPI.getServerDomain(), uuid.toString());
-	}
-
-	public static String getRedisAdvancementsPath(Player player) {
-		return getRedisAdvancementsPath(player.getUniqueId());
-	}
-
-	public static String getRedisAdvancementsPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:advancements", ConfigAPI.getServerDomain(), uuid.toString());
-	}
-
-	public static String getRedisScoresPath(Player player) {
-		return getRedisScoresPath(player.getUniqueId());
-	}
-
-	public static String getRedisScoresPath(UUID uuid) {
-		return String.format("%s:playerdata:%s:scores", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getStashPath() {
