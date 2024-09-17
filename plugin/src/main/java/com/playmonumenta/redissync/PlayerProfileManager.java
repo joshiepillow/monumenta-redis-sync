@@ -4,9 +4,17 @@ import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
+//TODO in order of difficulty
+// add some way of knowing what profiles exist -> should be easy to just attach as a hashmap to getRedisProfilePath
+// edit a lot of commands to deal with profiles
+// global data like market bans guh
 public class PlayerProfileManager {
 	private final UUID mUUID;
 	private Integer mProfileIndex;
+
+	//TODO make this a singleton with a hashmap from Player to ID or something so that the redis fetch doesn't happen everytime
+	// just need to be careful to release data when player logs out to not have memory leaks
+	// (though tbf this memory leak would have barely any impact since it would just be UUID int pairs)
 	public PlayerProfileManager(Player player) {
 		mUUID = player.getUniqueId();
 	}
@@ -37,15 +45,18 @@ public class PlayerProfileManager {
 		return mProfileIndex == null ? loadProfileIndex() : mProfileIndex;
 	}
 
-	/**
-	 * Change the active profile instance and save that change to redis
-	 * @param index new active profile
-	 */
-	//TODO batch all saves at savePlayer, get rid of sync
-	public void changeProfileIndex(int index) {
-		mProfileIndex = index;
-		RedisAPI.getInstance().sync().set(MonumentaRedisSyncAPI.getRedisProfilePath(mUUID), String.valueOf(index));
-	}
+	// Moved to MonumentaRedisSyncAPI -- not sure where it should be
+
+//	/**
+//	 * Change the active profile instance and save that change to redis
+//	 * @param index new active profile
+//	 */
+//	//TODO batch all saves at savePlayer, get rid of sync
+//	//TODO do something more advanced than kicking the player LMAO
+//	 public void changeProfileIndex(int index) {
+//		mProfileIndex = index;
+//		RedisAPI.getInstance().sync().set(MonumentaRedisSyncAPI.getRedisProfilePath(mUUID), String.valueOf(index));
+//	}
 
 	public String getRedisDataPath() {
 		return MonumentaRedisSyncAPI.getRedisDataPath(mUUID, getProfileIndex());

@@ -287,7 +287,7 @@ public class DataEventListener implements Listener {
 		/* Wait until player has finished saving if they just logged out and back in */
 		blockingWaitForPlayerToSave(player);
 
-		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(MonumentaRedisSyncAPI.getRedisAdvancementsPath(player), 0);
+		RedisFuture<String> advanceFuture = RedisAPI.getInstance().async().lindex(new PlayerProfileManager(player).getRedisAdvancementsPath(), 0);
 
 		try {
 			/* Advancements */
@@ -337,7 +337,7 @@ public class DataEventListener implements Listener {
 		/* Advancements */
 		mLogger.fine("Saving advancements data for player=" + player.getName());
 		mLogger.finest(() -> "Data:" + event.getJsonData());
-		String advPath = MonumentaRedisSyncAPI.getRedisAdvancementsPath(player);
+		String advPath = new PlayerProfileManager(player).getRedisAdvancementsPath();
 		commands.lpush(advPath, event.getJsonData());
 		commands.ltrim(advPath, 0, ConfigAPI.getHistoryAmount());
 
@@ -362,12 +362,14 @@ public class DataEventListener implements Listener {
 		/* Wait until player has finished saving if they just logged out and back in */
 		blockingWaitForPlayerToSave(player);
 
-		RedisFuture<byte[]> dataFuture = RedisAPI.getInstance().asyncStringBytes().lindex(MonumentaRedisSyncAPI.getRedisDataPath(player), 0);
+		PlayerProfileManager ppm = new PlayerProfileManager(player);
+
+		RedisFuture<byte[]> dataFuture = RedisAPI.getInstance().asyncStringBytes().lindex(ppm.getRedisDataPath(), 0);
 		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 		commands.multi();
-		RedisFuture<String> pluginDataFuture = commands.lindex(MonumentaRedisSyncAPI.getRedisPluginDataPath(player), 0);
-		RedisFuture<String> scoreFuture = commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(player), 0);
-		RedisFuture<Map<String, String>> shardDataFuture = commands.hgetall(MonumentaRedisSyncAPI.getRedisPerShardDataPath(player));
+		RedisFuture<String> pluginDataFuture = commands.lindex(ppm.getRedisPluginDataPath(), 0);
+		RedisFuture<String> scoreFuture = commands.lindex(ppm.getRedisScoresPath(), 0);
+		RedisFuture<Map<String, String>> shardDataFuture = commands.hgetall(ppm.getRedisPerShardDataPath());
 		commands.exec();
 
 		try {
@@ -577,8 +579,10 @@ public class DataEventListener implements Listener {
 			ReturnParams returnParams = mReturnParams.get(player.getUniqueId());
 			SaveData data = mAdapter.extractSaveData(event.getData(), returnParams);
 
+			PlayerProfileManager ppm = new PlayerProfileManager(player);
+
 			mLogger.finest(() -> "data: " + b64encode(data.getData()));
-			String dataPath = MonumentaRedisSyncAPI.getRedisDataPath(player);
+			String dataPath = ppm.getRedisDataPath();
 			futures.add(RedisAPI.getInstance().asyncStringBytes().lpush(dataPath, data.getData()));
 			futures.add(RedisAPI.getInstance().asyncStringBytes().ltrim(dataPath, 0, ConfigAPI.getHistoryAmount()));
 
@@ -590,7 +594,7 @@ public class DataEventListener implements Listener {
 			 * sharddata
 			 * This has two parts - an entry for the overall shard, and an entry for the specific world the player is on
 			 */
-			String shardDataPath = MonumentaRedisSyncAPI.getRedisPerShardDataPath(player);
+			String shardDataPath = ppm.getRedisPerShardDataPath();
 			// Save the data specifically for the world the player is currently on
 			String worldKey = MonumentaRedisSyncAPI.getRedisPerShardDataWorldKey(player.getWorld());
 			commands.hset(shardDataPath, worldKey, data.getShardData());
@@ -615,14 +619,14 @@ public class DataEventListener implements Listener {
 			mLogger.finest("sharddata (overall): " + ConfigAPI.getShardName() + "=" + overallShardDataStr);
 
 			/* history */
-			String histPath = MonumentaRedisSyncAPI.getRedisHistoryPath(player);
+			String histPath = ppm.getRedisHistoryPath();
 			String history = ConfigAPI.getShardName() + "|" + System.currentTimeMillis() + "|" + player.getName();
 			mLogger.finest(() -> "history: " + history);
 			commands.lpush(histPath, history);
 			commands.ltrim(histPath, 0, ConfigAPI.getHistoryAmount());
 
 			/* plugindata */
-			String pluginDataPath = MonumentaRedisSyncAPI.getRedisPluginDataPath(player);
+			String pluginDataPath = ppm.getRedisPluginDataPath();
 			mPluginData.put(player.getUniqueId(), pluginData); // Update cache
 			String pluginDataStr = mGson.toJson(pluginData);
 			mLogger.finest(() -> "plugindata: " + pluginDataStr);
@@ -635,7 +639,7 @@ public class DataEventListener implements Listener {
 			String scoreboardData = mGson.toJson(mAdapter.getPlayerScoresAsJson(player.getName(), Bukkit.getScoreboardManager().getMainScoreboard()));
 			mLogger.fine(() -> "Scoreboard saving took " + (System.currentTimeMillis() - scoreStartTime) + " milliseconds on main thread");
 			mLogger.finest(() -> "Data:" + scoreboardData);
-			String scorePath = MonumentaRedisSyncAPI.getRedisScoresPath(player);
+			String scorePath = ppm.getRedisScoresPath();
 			commands.lpush(scorePath, scoreboardData);
 			commands.ltrim(scorePath, 0, ConfigAPI.getHistoryAmount());
 
