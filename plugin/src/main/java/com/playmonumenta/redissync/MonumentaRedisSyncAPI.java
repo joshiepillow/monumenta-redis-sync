@@ -527,6 +527,10 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
+	public static String getRedisProfilePath(UUID uuid) {
+		return String.format("%s:playerdata:%s:profile", ConfigAPI.getServerDomain(), uuid.toString());
+	}
+
 	public static String getRedisDataPath(UUID uuid, int profileIndex) {
 		return String.format("%s:playerdata:%s:profile_%s:data", ConfigAPI.getServerDomain(), uuid.toString(), profileIndex);
 	}
@@ -873,6 +877,8 @@ public class MonumentaRedisSyncAPI {
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync invoked but is not loaded");
 		}
+
+		PlayerProfileManager profileManager = new PlayerProfileManager(uuid);
 
 		RedisAsyncCommands<String, byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
 		commands.multi();
