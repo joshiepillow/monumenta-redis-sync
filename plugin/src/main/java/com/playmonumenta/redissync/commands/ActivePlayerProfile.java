@@ -4,7 +4,6 @@ import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
-import dev.jorel.commandapi.arguments.IntegerArgument;
 
 public class ActivePlayerProfile {
 	public static void register() {
