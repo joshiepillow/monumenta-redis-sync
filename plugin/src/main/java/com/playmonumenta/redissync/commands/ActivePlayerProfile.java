@@ -11,7 +11,7 @@ public class ActivePlayerProfile {
 			.withPermission(CommandPermission.fromString("monumenta.command.activeplayerprofile"))
 			.executesPlayer((sender, args) -> {
 					try {
-						MonumentaRedisSyncAPI.getPlayerProfile(sender);
+						sender.sendMessage("Profile: " + MonumentaRedisSyncAPI.getPlayerProfile(sender));
 					} catch (Exception ex) {
 						throw CommandAPI.failWithString(ex.getMessage());
 					}
