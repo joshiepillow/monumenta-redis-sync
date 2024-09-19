@@ -410,8 +410,6 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	/* Player Profile Manager exposed API */
-
-	// TODO don't use sync
 	// TODO don't kick player
 	public static void playerChangeProfile(Player player, int profileIndex) throws Exception {
 		savePlayer(player); // TODO not sure if this is necessary -> saves happen automatically when you are kicked right?
@@ -421,7 +419,7 @@ public class MonumentaRedisSyncAPI {
 
 		DataEventListener.waitForPlayerToSaveThenAsync(player,
 			() -> Bukkit.getServer().getScheduler().runTask(MonumentaRedisSync.getInstance(),
-				() -> player.kick(Component.text("Your player data has been rolled back, and you can now re-join the server"))));
+				() -> player.kick(Component.text("Your profile has been switched, and you can now re-join the server"))));
 	}
 
 	public static int getPlayerProfile(Player player) {
