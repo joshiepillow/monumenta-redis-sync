@@ -266,7 +266,7 @@ public class MonumentaRedisSyncAPI {
 
 			try {
 				/* Read the most-recent player data save, and copy it to the stash */
-				//TODO not sure what the correct use case for this function is... is saving the current profile sufficient?
+				// TODO verify that only saving profile is sufficient
 				PlayerProfileManager ppm = new PlayerProfileManager(player);
 
 				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(ppm.getRedisDataPath(), 0);
@@ -409,11 +409,11 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
-	//TODO maybe this should go in PlayerProfileManager?
-	//TODO dont use sync
-	//TODO dont kick player
+	// TODO maybe this should go in PlayerProfileManager?
+	// TODO don't use sync
+	// TODO don't kick player
 	public static void playerChangeProfile(Player player, int profileIndex) throws Exception {
-		savePlayer(player); // not sure if this is necessary -> saves happen automatically when you are kicked right?
+		savePlayer(player); // TODO not sure if this is necessary -> saves happen automatically when you are kicked right?
 		RedisAPI.getInstance().sync().set(getRedisProfilePath(player.getUniqueId()), String.valueOf(profileIndex));
 		DataEventListener.setPlayerAsTransferring(player);
 
