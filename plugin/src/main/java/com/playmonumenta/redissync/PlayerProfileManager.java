@@ -2,83 +2,80 @@ package com.playmonumenta.redissync;
 
 import org.bukkit.entity.Player;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 //TODO in order of difficulty
 // add some way of knowing what profiles exist -> should be easy to just attach as a hashmap to getRedisProfilePath
 // edit a lot of commands to deal with profiles
 // global data like market bans guh
-public class PlayerProfileManager {
-	private final UUID mUUID;
-	private Integer mProfileIndex;
+public final class PlayerProfileManager {
+	// prevent construction
+	private PlayerProfileManager() {}
 
-	//TODO make this a singleton with a hashmap from Player to ID or something so that the redis fetch doesn't happen everytime
-	// just need to be careful to release data when player logs out to not have memory leaks
-	// (though tbf this memory leak would have barely any impact since it would just be UUID int pairs)
-	public PlayerProfileManager(Player player) {
-		mUUID = player.getUniqueId();
-	}
-	public PlayerProfileManager(UUID uuid) {
-		mUUID = uuid;
+	private static final HashMap<UUID, Integer> muuidToProfile = new HashMap<>();
+
+	/**
+	 * Return active profile index if cached, otherwise call load profile index
+	 * @param uuid uuid of player
+	 * @return active profile index
+	 */
+	static int getProfileIndex(UUID uuid) {
+		return muuidToProfile.containsKey(uuid) ?
+			muuidToProfile.get(uuid) : loadProfileIndex(uuid);
 	}
 
 	/**
-	 * Load active profile index from redis data
+	 * Reload active profile index from redis data
+	 * @param uuid uuid of player
 	 * @return active profile index
 	 */
 	//TODO get rid of sync
-	public int loadProfileIndex() {
-		String out = RedisAPI.getInstance().sync().get(MonumentaRedisSyncAPI.getRedisProfilePath(mUUID));
-		if (out == null) {
-			mProfileIndex = 0;
-		} else {
-			mProfileIndex = Integer.parseInt(out);
-		}
-		return mProfileIndex;
+	static int loadProfileIndex(UUID uuid) {
+		String out = RedisAPI.getInstance().sync().get(MonumentaRedisSyncAPI.getRedisProfilePath(uuid));
+		muuidToProfile.put(uuid, (out == null) ? 0 : Integer.parseInt(out));
+		return muuidToProfile.get(uuid);
+	}
+	/**
+	 * Change the active profile instance and save that change to redis
+	 * @param uuid uuid of player
+	 * @param index new active profile
+	 */
+	static void changeProfileIndex(UUID uuid, int index) {
+		muuidToProfile.put(uuid, index);
+		RedisAPI.getInstance().sync().set(MonumentaRedisSyncAPI.getRedisProfilePath(uuid), String.valueOf(index));
 	}
 
 	/**
-	 * Return locally stored profile index if loaded already, otherwise load from redis
-	 * @return active profile index
+	 * Remove a player's profile from cache
+	 * @param uuid uuid of player
+	 * @return player's current profile at time of removal
 	 */
-	public int getProfileIndex() {
-		return mProfileIndex == null ? loadProfileIndex() : mProfileIndex;
+	static int removePlayer(UUID uuid) {
+		return muuidToProfile.remove(uuid);
 	}
 
-	// Moved to MonumentaRedisSyncAPI -- not sure where it should be
-
-//	/**
-//	 * Change the active profile instance and save that change to redis
-//	 * @param index new active profile
-//	 */
-//	//TODO batch all saves at savePlayer, get rid of sync
-//	//TODO do something more advanced than kicking the player LMAO
-//	 public void changeProfileIndex(int index) {
-//		mProfileIndex = index;
-//		RedisAPI.getInstance().sync().set(MonumentaRedisSyncAPI.getRedisProfilePath(mUUID), String.valueOf(index));
-//	}
-
-	public String getRedisDataPath() {
-		return MonumentaRedisSyncAPI.getRedisDataPath(mUUID, getProfileIndex());
+	static String getRedisDataPath(UUID uuid) {
+		return MonumentaRedisSyncAPI.getRedisDataPath(uuid, getProfileIndex(uuid));
 	}
 
-	public String getRedisHistoryPath() {
-		return MonumentaRedisSyncAPI.getRedisHistoryPath(mUUID, getProfileIndex());
+	static String getRedisHistoryPath(UUID uuid) {
+		return MonumentaRedisSyncAPI.getRedisHistoryPath(uuid, getProfileIndex(uuid));
 	}
 
-	public String getRedisPerShardDataPath() {
-		return MonumentaRedisSyncAPI.getRedisPerShardDataPath(mUUID, getProfileIndex());
+	static String getRedisPerShardDataPath(UUID uuid) {
+		return MonumentaRedisSyncAPI.getRedisPerShardDataPath(uuid, getProfileIndex(uuid));
 	}
 
-	public String getRedisPluginDataPath() {
-		return MonumentaRedisSyncAPI.getRedisPluginDataPath(mUUID, getProfileIndex());
+	static String getRedisPluginDataPath(UUID uuid) {
+		return MonumentaRedisSyncAPI.getRedisPluginDataPath(uuid, getProfileIndex(uuid));
 	}
 
-	public String getRedisAdvancementsPath() {
-		return MonumentaRedisSyncAPI.getRedisAdvancementsPath(mUUID, getProfileIndex());
+	static String getRedisAdvancementsPath(UUID uuid) {
+		return MonumentaRedisSyncAPI.getRedisAdvancementsPath(uuid, getProfileIndex(uuid));
 	}
 
-	public String getRedisScoresPath() {
-		return MonumentaRedisSyncAPI.getRedisScoresPath(mUUID, getProfileIndex());
+	static String getRedisScoresPath(UUID uuid) {
+		return MonumentaRedisSyncAPI.getRedisScoresPath(uuid, getProfileIndex(uuid));
 	}
 }

@@ -36,7 +36,7 @@ public class PlayerHistory {
 		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
 			// ASYNC
 			RedisAPI api = RedisAPI.getInstance();
-			List<String> history = api.sync().lrange(MonumentaRedisSyncAPI.getRedisHistoryPath(target.getUniqueId(), new PlayerProfileManager(target).getProfileIndex()), 0, -1);
+			List<String> history = api.sync().lrange(MonumentaRedisSyncAPI.getRedisHistoryPath(target.getUniqueId(), MonumentaRedisSyncAPI.getPlayerProfile(target)), 0, -1);
 
 			Bukkit.getScheduler().runTask(plugin, () -> {
 				// SYNC
@@ -44,7 +44,7 @@ public class PlayerHistory {
 				for (String hist : history) {
 					String[] split = hist.split("\\|");
 					if (split.length != 3) {
-						sender.sendMessage(ChatColor.RED + "Got corrupted history with " + Integer.toString(split.length) + " entries: " + hist);
+						sender.sendMessage(ChatColor.RED + "Got corrupted history with " + split.length + " entries: " + hist);
 						continue;
 					}
 

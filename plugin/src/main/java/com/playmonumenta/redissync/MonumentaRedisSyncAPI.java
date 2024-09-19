@@ -267,13 +267,13 @@ public class MonumentaRedisSyncAPI {
 			try {
 				/* Read the most-recent player data save, and copy it to the stash */
 				// TODO verify that only saving profile is sufficient
-				PlayerProfileManager ppm = new PlayerProfileManager(player);
+				UUID uuid = player.getUniqueId();
 
-				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(ppm.getRedisDataPath(), 0);
-				RedisFuture<String> advanceFuture = api.async().lindex(ppm.getRedisAdvancementsPath(), 0);
-				RedisFuture<String> scoreFuture = api.async().lindex(ppm.getRedisScoresPath(), 0);
-				RedisFuture<String> pluginFuture = api.async().lindex(ppm.getRedisPluginDataPath(), 0);
-				RedisFuture<String> historyFuture = api.async().lindex(ppm.getRedisHistoryPath(), 0);
+				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(PlayerProfileManager.getRedisDataPath(uuid), 0);
+				RedisFuture<String> advanceFuture = api.async().lindex(PlayerProfileManager.getRedisAdvancementsPath(uuid), 0);
+				RedisFuture<String> scoreFuture = api.async().lindex(PlayerProfileManager.getRedisScoresPath(uuid), 0);
+				RedisFuture<String> pluginFuture = api.async().lindex(PlayerProfileManager.getRedisPluginDataPath(uuid), 0);
+				RedisFuture<String> historyFuture = api.async().lindex(PlayerProfileManager.getRedisHistoryPath(uuid), 0);
 
 				futures.add(api.asyncStringBytes().hset(getStashPath(), saveName + "-data", dataFuture.get()));
 				futures.add(api.async().hset(getStashPath(), saveName + "-scores", scoreFuture.get()));
@@ -342,13 +342,13 @@ public class MonumentaRedisSyncAPI {
 					return;
 				}
 
-				PlayerProfileManager ppm = new PlayerProfileManager(player);
+				UUID uuid = player.getUniqueId();
 
-				futures.add(api.asyncStringBytes().lpush(ppm.getRedisDataPath(), dataFuture.get()));
-				futures.add(api.async().lpush(ppm.getRedisAdvancementsPath(), advanceFuture.get()));
-				futures.add(api.async().lpush(ppm.getRedisScoresPath(), scoreFuture.get()));
-				futures.add(api.async().lpush(ppm.getRedisPluginDataPath(), pluginFuture.get()));
-				futures.add(api.async().lpush(ppm.getRedisHistoryPath(), "stash@" + historyFuture.get()));
+				futures.add(api.asyncStringBytes().lpush(PlayerProfileManager.getRedisDataPath(uuid), dataFuture.get()));
+				futures.add(api.async().lpush(PlayerProfileManager.getRedisAdvancementsPath(uuid), advanceFuture.get()));
+				futures.add(api.async().lpush(PlayerProfileManager.getRedisScoresPath(uuid), scoreFuture.get()));
+				futures.add(api.async().lpush(PlayerProfileManager.getRedisPluginDataPath(uuid), pluginFuture.get()));
+				futures.add(api.async().lpush(PlayerProfileManager.getRedisHistoryPath(uuid), "stash@" + historyFuture.get()));
 
 				if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
 					MonumentaRedisSync.getInstance().getLogger().severe("Got timeout loading stash data for player '" + player.getName() + "'");
@@ -409,21 +409,27 @@ public class MonumentaRedisSyncAPI {
 		});
 	}
 
-	// TODO maybe this should go in PlayerProfileManager?
+	/* Player Profile Manager exposed API */
+
 	// TODO don't use sync
 	// TODO don't kick player
 	public static void playerChangeProfile(Player player, int profileIndex) throws Exception {
 		savePlayer(player); // TODO not sure if this is necessary -> saves happen automatically when you are kicked right?
-		RedisAPI.getInstance().sync().set(getRedisProfilePath(player.getUniqueId()), String.valueOf(profileIndex));
 		DataEventListener.setPlayerAsTransferring(player);
 
-		DataEventListener.waitForPlayerToSaveThenAsync(player, () -> {
-			Bukkit.getServer().getScheduler().runTask(MonumentaRedisSync.getInstance(), () -> player.kick(Component.text("Your player data has been rolled back, and you can now re-join the server")));
-		});
+		PlayerProfileManager.changeProfileIndex(player.getUniqueId(), profileIndex);
+
+		DataEventListener.waitForPlayerToSaveThenAsync(player,
+			() -> Bukkit.getServer().getScheduler().runTask(MonumentaRedisSync.getInstance(),
+				() -> player.kick(Component.text("Your player data has been rolled back, and you can now re-join the server"))));
+	}
+
+	public static int getPlayerProfile(Player player) {
+		return PlayerProfileManager.getProfileIndex(player.getUniqueId());
 	}
 
 	public static void playerRollback(Player moderator, Player player, int historyIndex) throws Exception {
-		int currentProfile = new PlayerProfileManager(player).getProfileIndex();
+		int currentProfile = PlayerProfileManager.getProfileIndex(player.getUniqueId());
 		playerRollback(moderator, player, currentProfile, currentProfile, historyIndex);
 	}
 
@@ -894,7 +900,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static CompletableFuture<RedisPlayerData> getOfflinePlayerData(UUID uuid) throws Exception {
-		return getOfflinePlayerData(uuid, new PlayerProfileManager(uuid).getProfileIndex());
+		return getOfflinePlayerData(uuid, PlayerProfileManager.getProfileIndex(uuid));
 	}
 
 	public static CompletableFuture<RedisPlayerData> getOfflinePlayerData(UUID uuid, int profileIndex) throws Exception {
@@ -906,8 +912,6 @@ public class MonumentaRedisSyncAPI {
 		if (mrs == null) {
 			throw new Exception("MonumentaRedisSync invoked but is not loaded");
 		}
-
-		PlayerProfileManager profileManager = new PlayerProfileManager(uuid);
 
 		RedisAsyncCommands<String, byte[]> commands = RedisAPI.getInstance().asyncStringBytes();
 		commands.multi();
@@ -952,7 +956,7 @@ public class MonumentaRedisSyncAPI {
 
 		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
 
-		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, new PlayerProfileManager(uuid).getProfileIndex()), 0)
+		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, PlayerProfileManager.getProfileIndex(uuid)), 0)
 			.thenApply(
 				(scoreData) -> new Gson().fromJson(scoreData, JsonObject.class).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, (entry) -> entry.getValue().getAsInt())))
 			.whenComplete((scoreMap, ex) -> {
@@ -979,7 +983,7 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	public static CompletableFuture<Boolean> saveOfflinePlayerData(RedisPlayerData data) throws Exception {
-		return saveOfflinePlayerData(data, new PlayerProfileManager(data.getUniqueId()).getProfileIndex());
+		return saveOfflinePlayerData(data, PlayerProfileManager.getProfileIndex(data.getUniqueId()));
 	}
 
 	/** Future returns true if successfully committed, false if not */
