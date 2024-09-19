@@ -6,16 +6,13 @@ import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
 import dev.jorel.commandapi.arguments.IntegerArgument;
 
-public class PlayerChangeProfile {
+public class ActivePlayerProfile {
 	public static void register() {
-		IntegerArgument profileTo = new IntegerArgument("profileTo", 0);
-
-		new CommandAPICommand("playerchangeprofile")
-			.withPermission(CommandPermission.fromString("monumenta.command.playerchangeprofile"))
-			.withArguments(profileTo)
+		new CommandAPICommand("activeplayerprofile")
+			.withPermission(CommandPermission.fromString("monumenta.command.activeplayerprofile"))
 			.executesPlayer((sender, args) -> {
 					try {
-						MonumentaRedisSyncAPI.playerChangeProfile(sender, args.getByArgument(profileTo));
+						MonumentaRedisSyncAPI.getPlayerProfile(sender);
 					} catch (Exception ex) {
 						throw CommandAPI.failWithString(ex.getMessage());
 					}

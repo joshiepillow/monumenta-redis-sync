@@ -266,7 +266,6 @@ public class MonumentaRedisSyncAPI {
 
 			try {
 				/* Read the most-recent player data save, and copy it to the stash */
-				// TODO verify that only saving profile is sufficient
 				UUID uuid = player.getUniqueId();
 
 				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(PlayerProfileManager.getRedisDataPath(uuid), 0);
@@ -410,9 +409,12 @@ public class MonumentaRedisSyncAPI {
 	}
 
 	/* Player Profile Manager exposed API */
-	// TODO don't kick player
+	//TODO Improve playerChangeProfile
+	// - don't kick player
+	// - resolve danger of switching profiles, then save overwriting other profile. very scary
+	// - see if savePlayer is necessary
 	public static void playerChangeProfile(Player player, int profileIndex) throws Exception {
-		savePlayer(player); // TODO not sure if this is necessary -> saves happen automatically when you are kicked right?
+		savePlayer(player);
 		DataEventListener.setPlayerAsTransferring(player);
 
 		PlayerProfileManager.changeProfileIndex(player.getUniqueId(), profileIndex);
@@ -425,6 +427,7 @@ public class MonumentaRedisSyncAPI {
 	public static int getPlayerProfile(Player player) {
 		return PlayerProfileManager.getProfileIndex(player.getUniqueId());
 	}
+	/* End Player Profile Manager exposed API */
 
 	public static void playerRollback(Player moderator, Player player, int historyIndex) throws Exception {
 		int currentProfile = PlayerProfileManager.getProfileIndex(player.getUniqueId());
