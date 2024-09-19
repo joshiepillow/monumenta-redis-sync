@@ -10,16 +10,23 @@ import org.bukkit.entity.Player;
 
 public class PlayerLoadFromPlayer {
 	public static void register() {
-		EntitySelectorArgument.OnePlayer playerArg = new EntitySelectorArgument.OnePlayer("player");
-		IntegerArgument indexArg = new IntegerArgument("index", 0);
+		EntitySelectorArgument.OnePlayer playerTo = new EntitySelectorArgument.OnePlayer("player");
+		EntitySelectorArgument.OnePlayer playerFrom = new EntitySelectorArgument.OnePlayer("player");
+		IntegerArgument profileTo = new IntegerArgument("profileTo", 0);
+		IntegerArgument profileFrom = new IntegerArgument("profileFrom", 0);
+		IntegerArgument historyIndex = new IntegerArgument("historyIndex", 0);
 
 		new CommandAPICommand("playerloadfromplayer")
 			.withPermission(CommandPermission.fromString("monumenta.command.playerloadfromplayer"))
-			.withArguments(playerArg)
-			.withArguments(indexArg)
+			.withArguments(playerTo)
+			.withArguments(playerFrom)
+			.withArguments(profileTo)
+			.withArguments(profileFrom)
+			.withArguments(historyIndex)
 			.executesPlayer((sender, args) -> {
 				try {
-					MonumentaRedisSyncAPI.playerLoadFromPlayer(sender, args.getByArgument(playerArg), args.getByArgument(indexArg));
+					MonumentaRedisSyncAPI.playerLoadFromPlayer(args.getByArgument(playerTo), args.getByArgument(playerFrom),
+						args.getByArgument(profileTo), args.getByArgument(profileFrom), args.getByArgument(historyIndex));
 				} catch (Exception ex) {
 					throw CommandAPI.failWithString(ex.getMessage());
 				}
