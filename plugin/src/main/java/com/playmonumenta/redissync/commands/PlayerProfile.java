@@ -4,18 +4,14 @@ import com.playmonumenta.redissync.MonumentaRedisSyncAPI;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandPermission;
-import dev.jorel.commandapi.arguments.IntegerArgument;
 
-public class PlayerChangeProfile {
+public class PlayerProfile {
 	public static void register() {
-		IntegerArgument profileTo = new IntegerArgument("profileTo", 0);
-
-		new CommandAPICommand("playerchangeprofile")
-			.withPermission(CommandPermission.fromString("monumenta.command.playerchangeprofile"))
-			.withArguments(profileTo)
+		new CommandAPICommand("playerprofile")
+			.withPermission(CommandPermission.fromString("monumenta.command.playerprofile"))
 			.executesPlayer((sender, args) -> {
 					try {
-						MonumentaRedisSyncAPI.playerChangeProfile(sender, args.getByArgument(profileTo));
+						sender.sendMessage("Profile: " + MonumentaRedisSyncAPI.getPlayerProfile(sender));
 					} catch (Exception ex) {
 						throw CommandAPI.failWithString(ex.getMessage());
 					}

@@ -427,6 +427,35 @@ public class MonumentaRedisSyncAPI {
 	public static int getPlayerProfile(Player player) {
 		return PlayerProfileManager.getProfileIndex(player.getUniqueId());
 	}
+
+	public static void deletePlayerProfile(Player player) throws Exception {
+		MonumentaRedisSync mrs = MonumentaRedisSync.getInstance();
+		if (mrs == null) {
+			throw new Exception("MonumentaRedisSync is not loaded!");
+		}
+
+		savePlayer(player);
+		RedisAPI api = RedisAPI.getInstance();
+		UUID uuid = player.getUniqueId();
+
+		DataEventListener.waitForPlayerToSaveThenAsync(player, () -> {
+			List<RedisFuture<?>> futures = new ArrayList<>();
+			futures.add(api.async().del(PlayerProfileManager.getRedisAdvancementsPath(uuid)));
+			futures.add(api.async().del(PlayerProfileManager.getRedisDataPath(uuid)));
+			futures.add(api.async().del(PlayerProfileManager.getRedisPerShardDataPath(uuid)));
+			futures.add(api.async().del(PlayerProfileManager.getRedisScoresPath(uuid)));
+			futures.add(api.async().del(PlayerProfileManager.getRedisPluginDataPath(uuid)));
+			// does not delete history path
+			if (!LettuceFutures.awaitAll(TIMEOUT_SECONDS, TimeUnit.SECONDS, futures.toArray(new RedisFuture[futures.size()]))) {
+				player.sendMessage(ChatColor.RED + "Got timeout deleting profile data");
+				mrs.getLogger().severe("Got timeout deleting profile for '" + player.getName() + "'");
+			}
+		});
+
+		Bukkit.getServer().getScheduler().runTask(mrs, () -> player.kick(Component.text("Your profile has been deleted, and you can now re-join the server")));
+
+	}
+
 	/* End Player Profile Manager exposed API */
 
 	public static void playerRollback(Player moderator, Player player, int historyIndex) throws Exception {

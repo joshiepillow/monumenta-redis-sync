@@ -56,8 +56,9 @@ public class MonumentaRedisSync extends JavaPlugin {
 		RboardCommand.register(this);
 		RemoteDataCommand.register(this);
 
-		PlayerChangeProfile.register();
-		ActivePlayerProfile.register();
+		PlayerProfileChange.register();
+		PlayerProfileDelete.register();
+		PlayerProfile.register();
 	}
 
 	@Override
