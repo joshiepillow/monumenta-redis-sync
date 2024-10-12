@@ -9,6 +9,9 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.configurate.CommentedConfigurationNode;
@@ -82,8 +85,9 @@ public class MonumentaRedisSyncVelocity {
 		int ticksPerPlayerAutosave = -1;
 		boolean savingDisabled = true;
 		boolean scoreboardCleanupEnabled = false;
+		HashSet<String> globalScoreNames = new HashSet<>(mConfig.mGlobalScoreNames);
 
-		new ConfigAPI(mLogger, redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new ConfigAPI(mLogger, redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled, globalScoreNames);
 	}
 
 	private void saveConfig() {
@@ -112,5 +116,8 @@ public class MonumentaRedisSyncVelocity {
 
 		@Setting(value = "shard_name")
 		public String mShardName = "bungee";
+
+		@Setting(value = "global_score_names")
+		public List<String> mGlobalScoreNames = new ArrayList<>();
 	}
 }

@@ -493,6 +493,7 @@ public class MonumentaRedisSyncAPI {
 
 				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(getRedisDataPath(uuid, profileFrom), rollbackIndex);
 				RedisFuture<String> advanceFuture = api.async().lindex(getRedisAdvancementsPath(uuid, profileFrom), rollbackIndex);
+				RedisFuture<String> globalScoreFuture = api.async().lindex(getRedisGlobalScoresPath(uuid), rollbackIndex);
 				RedisFuture<String> scoreFuture = api.async().lindex(getRedisScoresPath(uuid, profileFrom), rollbackIndex);
 				RedisFuture<String> pluginFuture = api.async().lindex(getRedisPluginDataPath(uuid, profileFrom), rollbackIndex);
 				RedisFuture<String> historyFuture = api.async().lindex(getRedisHistoryPath(uuid, profileFrom), rollbackIndex);
@@ -505,6 +506,7 @@ public class MonumentaRedisSyncAPI {
 
 				futures.add(api.asyncStringBytes().lpush(MonumentaRedisSyncAPI.getRedisDataPath(uuid, profileTo), dataFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(uuid, profileTo), advanceFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), globalScoreFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, profileTo), scoreFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisPluginDataPath(uuid, profileTo), pluginFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(uuid, profileTo), "rollback@" + historyFuture.get()));
@@ -555,6 +557,7 @@ public class MonumentaRedisSyncAPI {
 
 				RedisFuture<byte[]> dataFuture = api.asyncStringBytes().lindex(getRedisDataPath(uuidFrom, profileFrom), index);
 				RedisFuture<String> advanceFuture = api.async().lindex(getRedisAdvancementsPath(uuidFrom, profileFrom), index);
+				RedisFuture<String> globalScoreFuture = api.async().lindex(getRedisGlobalScoresPath(uuidFrom), index);
 				RedisFuture<String> scoreFuture = api.async().lindex(getRedisScoresPath(uuidFrom, profileFrom), index);
 				RedisFuture<String> pluginFuture = api.async().lindex(getRedisPluginDataPath(uuidFrom, profileFrom), index);
 				RedisFuture<String> historyFuture = api.async().lindex(getRedisHistoryPath(uuidFrom, profileFrom), index);
@@ -567,6 +570,7 @@ public class MonumentaRedisSyncAPI {
 
 				futures.add(api.asyncStringBytes().lpush(MonumentaRedisSyncAPI.getRedisDataPath(uuidTo, profileTo), dataFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(uuidTo, profileTo), advanceFuture.get()));
+				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuidTo), globalScoreFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisScoresPath(uuidTo, profileTo), scoreFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisPluginDataPath(uuidTo, profileTo), pluginFuture.get()));
 				futures.add(api.async().lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(uuidTo, profileTo), "loadfrom@" + loadfrom.getName() + "@" + historyFuture.get()));
@@ -590,6 +594,10 @@ public class MonumentaRedisSyncAPI {
 
 	public static String getRedisProfilePath(UUID uuid) {
 		return String.format("%s:playerdata:%s:profile", ConfigAPI.getServerDomain(), uuid.toString());
+	}
+
+	public static String getRedisGlobalScoresPath(UUID uuid) {
+		return String.format("%s:playerdata:%s:globalscores", ConfigAPI.getServerDomain(), uuid.toString());
 	}
 
 	public static String getRedisDataPath(UUID uuid, int profileIndex) {
@@ -875,18 +883,19 @@ public class MonumentaRedisSyncAPI {
 	/** Future returns non-null if successfully loaded data, null on error */
 	@Nullable
 	private static RedisPlayerData transformPlayerData(MonumentaRedisSync mrs, UUID uuid, TransactionResult result) {
-		if (result.isEmpty() || result.size() == 0 || result.get(0) == null) {
+		if (result.isEmpty() || result.get(0) == null) {
 			mrs.getLogger().warning("Failed to retrieve player data; likely player didn't make it past the tutorial");
 			return null;
 		}
 
-		if (result.size() != 5) {
-			mrs.getLogger().severe("Failed to retrieve player data; only " + result.size() + " / 5 expected data elements retrieved");
+		if (result.size() != 6) {
+			mrs.getLogger().severe("Failed to retrieve player data; only " + result.size() + " / 6 expected data elements retrieved");
 			return null;
 		}
 
 		try {
 			String advancements;
+			String globalScores;
 			String scores;
 			String pluginData;
 			String history;
@@ -901,24 +910,32 @@ public class MonumentaRedisSyncAPI {
 			}
 
 			if (result.get(2) == null) {
-				mrs.getLogger().severe("Player scores data was missing or corrupted and has been reset");
-				scores = "{}";
+				mrs.getLogger().severe("Player global scores data was missing or corrupted and has been reset");
+				globalScores = "{}";
 			} else {
-				scores = new String(result.get(2), StandardCharsets.UTF_8);
+				globalScores = new String(result.get(2), StandardCharsets.UTF_8);
 			}
 
 			if (result.get(3) == null) {
-				mrs.getLogger().warning("Player pluginData was missing or corrupted and has been reset");
-				pluginData = "{}";
+				mrs.getLogger().severe("Player scores data was missing or corrupted and has been reset");
+				scores = "{}";
 			} else {
-				pluginData = new String(result.get(3), StandardCharsets.UTF_8);
+				scores = new String(result.get(3), StandardCharsets.UTF_8);
+				scores = new Gson().toJson(PlayerProfileManager.getScores(globalScores, scores));
 			}
 
 			if (result.get(4) == null) {
+				mrs.getLogger().warning("Player pluginData was missing or corrupted and has been reset");
+				pluginData = "{}";
+			} else {
+				pluginData = new String(result.get(4), StandardCharsets.UTF_8);
+			}
+
+			if (result.get(5) == null) {
 				mrs.getLogger().warning("Player history data was missing or corrupted and has been reset");
 				history = "UpdateAllPlayers|" + System.currentTimeMillis() + "|unknown";
 			} else {
-				history = new String(result.get(4), StandardCharsets.UTF_8);
+				history = new String(result.get(5), StandardCharsets.UTF_8);
 			}
 
 			return new RedisPlayerData(uuid, mrs.getVersionAdapter().retrieveSaveData(data, new JsonObject()), advancements, scores, pluginData, history);
@@ -948,6 +965,7 @@ public class MonumentaRedisSyncAPI {
 
 		commands.lindex(MonumentaRedisSyncAPI.getRedisDataPath(uuid, profileIndex), 0);
 		commands.lindex(MonumentaRedisSyncAPI.getRedisAdvancementsPath(uuid, profileIndex), 0);
+		commands.lindex(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), 0);
 		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, profileIndex), 0);
 		commands.lindex(MonumentaRedisSyncAPI.getRedisPluginDataPath(uuid, profileIndex), 0);
 		commands.lindex(MonumentaRedisSyncAPI.getRedisHistoryPath(uuid, profileIndex), 0);
@@ -985,10 +1003,12 @@ public class MonumentaRedisSyncAPI {
 		}
 
 		RedisAsyncCommands<String, String> commands = RedisAPI.getInstance().async();
-
-		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, PlayerProfileManager.getProfileIndex(uuid)), 0)
+		commands.multi();
+		commands.lindex(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), 0);
+		commands.lindex(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, PlayerProfileManager.getProfileIndex(uuid)), 0);
+		commands.exec()
 			.thenApply(
-				(scoreData) -> new Gson().fromJson(scoreData, JsonObject.class).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, (entry) -> entry.getValue().getAsInt())))
+				(TransactionResult result) -> PlayerProfileManager.getScores(result.get(0), result.get(1)))
 			.whenComplete((scoreMap, ex) -> {
 				Bukkit.getScheduler().runTask(mrs, () -> {
 					if (ex != null) {
@@ -1029,7 +1049,7 @@ public class MonumentaRedisSyncAPI {
 		SaveData splitData = mrs.getVersionAdapter().extractSaveData(data.getNbtTagCompoundData(), null);
 		commands.lpush(MonumentaRedisSyncAPI.getRedisDataPath(data.getUniqueId(), profileIndex), splitData.getData());
 		commands.lpush(MonumentaRedisSyncAPI.getRedisAdvancementsPath(data.getUniqueId(), profileIndex), data.getAdvancements().getBytes(StandardCharsets.UTF_8));
-		commands.lpush(MonumentaRedisSyncAPI.getRedisScoresPath(data.getUniqueId(), profileIndex), data.getScores().getBytes(StandardCharsets.UTF_8));
+		PlayerProfileManager.saveScores(data.getUniqueId(), profileIndex, data.getScores(), commands);
 		commands.lpush(MonumentaRedisSyncAPI.getRedisPluginDataPath(data.getUniqueId(), profileIndex), data.getPluginData().getBytes(StandardCharsets.UTF_8));
 		commands.lpush(MonumentaRedisSyncAPI.getRedisHistoryPath(data.getUniqueId(), profileIndex), data.getHistory().getBytes(StandardCharsets.UTF_8));
 

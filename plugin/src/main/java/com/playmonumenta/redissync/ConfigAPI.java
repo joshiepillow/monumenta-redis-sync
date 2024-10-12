@@ -1,5 +1,6 @@
 package com.playmonumenta.redissync;
 
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class ConfigAPI {
@@ -14,6 +15,7 @@ public class ConfigAPI {
 	private final int mTicksPerPlayerAutosave;
 	private final boolean mSavingDisabled;
 	private final boolean mScoreboardCleanupEnabled;
+	private final Set<String> mGlobalScoreNames;
 
 	public static String getRedisHost() {
 		return INSTANCE.mRedisHost;
@@ -53,7 +55,11 @@ public class ConfigAPI {
 		return INSTANCE.mScoreboardCleanupEnabled;
 	}
 
-	protected ConfigAPI(Logger logger, String redisHost, int redisPort, String serverDomain, String shardName, int historyAmount, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
+	public static Set<String> getGlobalScoreNames() {
+		return INSTANCE.mGlobalScoreNames;
+	}
+
+	protected ConfigAPI(Logger logger, String redisHost, int redisPort, String serverDomain, String shardName, int historyAmount, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled, Set<String> globalScoreNames) {
 		mRedisHost = redisHost;
 		mRedisPort = redisPort;
 		mServerDomain = serverDomain;
@@ -62,21 +68,23 @@ public class ConfigAPI {
 		mTicksPerPlayerAutosave = ticksPerPlayerAutosave;
 		mSavingDisabled = savingDisabled;
 		mScoreboardCleanupEnabled = scoreboardCleanupEnabled;
+		mGlobalScoreNames = globalScoreNames;
 		INSTANCE = this;
 
 		logger.info("Configuration:");
 		logger.info("  redis_host = " + (mRedisHost == null ? "null" : mRedisHost));
-		logger.info("  redis_port = " + Integer.toString(mRedisPort));
+		logger.info("  redis_port = " + mRedisPort);
 		logger.info("  server_domain = " + (mServerDomain == null ? "null" : mServerDomain));
 		logger.info("  shard_name = " + (mShardName == null ? "null" : mShardName));
-		logger.info("  history_amount = " + Integer.toString(mHistoryAmount));
-		logger.info("  ticks_per_player_autosave = " + Integer.toString(mTicksPerPlayerAutosave));
-		logger.info("  saving_disabled = " + Boolean.toString(mSavingDisabled));
-		logger.info("  scoreboard_cleanup_enabled = " + Boolean.toString(mScoreboardCleanupEnabled));
+		logger.info("  history_amount = " + mHistoryAmount);
+		logger.info("  ticks_per_player_autosave = " + mTicksPerPlayerAutosave);
+		logger.info("  saving_disabled = " + mSavingDisabled);
+		logger.info("  scoreboard_cleanup_enabled = " + mScoreboardCleanupEnabled);
+		logger.info("  global_score_names = {" + String.join(", ", mGlobalScoreNames) + "}");
 	}
 
 	// Probably a better way to do this
-	protected ConfigAPI(org.slf4j.Logger logger, String redisHost, int redisPort, String serverDomain, String shardName, int historyAmount, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled) {
+	protected ConfigAPI(org.slf4j.Logger logger, String redisHost, int redisPort, String serverDomain, String shardName, int historyAmount, int ticksPerPlayerAutosave, boolean savingDisabled, boolean scoreboardCleanupEnabled, Set<String> globalScoreNames) {
 		mRedisHost = redisHost;
 		mRedisPort = redisPort;
 		mServerDomain = serverDomain;
@@ -85,16 +93,18 @@ public class ConfigAPI {
 		mTicksPerPlayerAutosave = ticksPerPlayerAutosave;
 		mSavingDisabled = savingDisabled;
 		mScoreboardCleanupEnabled = scoreboardCleanupEnabled;
+		mGlobalScoreNames = globalScoreNames;
 		INSTANCE = this;
 
 		logger.info("Configuration:");
 		logger.info("  redis_host = " + (mRedisHost == null ? "null" : mRedisHost));
-		logger.info("  redis_port = " + Integer.toString(mRedisPort));
+		logger.info("  redis_port = " + mRedisPort);
 		logger.info("  server_domain = " + (mServerDomain == null ? "null" : mServerDomain));
 		logger.info("  shard_name = " + (mShardName == null ? "null" : mShardName));
-		logger.info("  history_amount = " + Integer.toString(mHistoryAmount));
-		logger.info("  ticks_per_player_autosave = " + Integer.toString(mTicksPerPlayerAutosave));
-		logger.info("  saving_disabled = " + Boolean.toString(mSavingDisabled));
-		logger.info("  scoreboard_cleanup_enabled = " + Boolean.toString(mScoreboardCleanupEnabled));
+		logger.info("  history_amount = " + mHistoryAmount);
+		logger.info("  ticks_per_player_autosave = " + mTicksPerPlayerAutosave);
+		logger.info("  saving_disabled = " + mSavingDisabled);
+		logger.info("  scoreboard_cleanup_enabled = " + mScoreboardCleanupEnabled);
+		logger.info("  global_score_names = {" + String.join(", ", mGlobalScoreNames) + "}");
 	}
 }

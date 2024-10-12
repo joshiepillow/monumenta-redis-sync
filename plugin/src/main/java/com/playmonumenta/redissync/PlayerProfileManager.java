@@ -1,9 +1,17 @@
 package com.playmonumenta.redissync;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import org.bukkit.entity.Player;
 
+import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 //TODO in order of difficulty
 // add some way of knowing what profiles exist -> should be easy to just attach as a hashmap to getRedisProfilePath
@@ -36,6 +44,7 @@ public final class PlayerProfileManager {
 		muuidToProfile.put(uuid, (out == null) ? 0 : Integer.parseInt(out));
 		return muuidToProfile.get(uuid);
 	}
+
 	/**
 	 * Change the active profile instance and save that change to redis
 	 * @param uuid uuid of player
@@ -53,6 +62,54 @@ public final class PlayerProfileManager {
 	 */
 	static int removePlayer(UUID uuid) {
 		return muuidToProfile.remove(uuid);
+	}
+
+	private static Stream<Map.Entry<String, Integer>> toStream(String mapAsString) {
+		return new Gson().fromJson(mapAsString, JsonObject.class).entrySet().stream()
+			.map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().getAsInt()));
+	}
+
+	private static Map<String, Integer> filterGlobal(String mapAsString) {
+		return toStream(mapAsString)
+			.filter(entry -> ConfigAPI.getGlobalScoreNames().contains(entry.getKey()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	/**
+	 * Get profile scores from redis and merge them with global scores
+	 * @param globalScores global scores from redis as string
+	 * @param profileScores profile scores from redis as string
+	 * @return all scores
+	 */
+	static Map<String, Integer> getScores(String globalScores, String profileScores) {
+		Map<String, Integer> globalScoresMap = globalScores == null ? new HashMap<>() : filterGlobal(globalScores);
+		Map<String, Integer> profileScoresMap = profileScores == null ? new HashMap<>() : toStream(profileScores)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		profileScoresMap.putAll(globalScoresMap);
+		return profileScoresMap;
+	}
+
+	/**
+	 * Store all scores
+	 * @param uuid uuid of player
+	 * @param profileIndex profile to save to
+	 * @param allScores all scores attached to player
+	 * @param commands multi command to add to
+	 */
+	static void saveScores(UUID uuid, int profileIndex, String allScores, RedisAsyncCommands<String, byte[]> commands) {
+		commands.lpush(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, profileIndex), allScores.getBytes(StandardCharsets.UTF_8));
+		String globalScores = new Gson().toJson(filterGlobal(allScores));
+		commands.lpush(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), globalScores.getBytes(StandardCharsets.UTF_8));
+	}
+
+	/**
+	 * Why does DataEventListener do the exact same thing as MonumentaRedisSyncAPI but use String instead of byte[]
+	 * Cant even overload this because of "erasure"
+	 */
+	static void saveScores2(UUID uuid, int profileIndex, String allScores, RedisAsyncCommands<String, String> commands) {
+		commands.lpush(MonumentaRedisSyncAPI.getRedisScoresPath(uuid, profileIndex), allScores);
+		String globalScores = new Gson().toJson(filterGlobal(allScores));
+		commands.lpush(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), globalScores);
 	}
 
 	static String getRedisDataPath(UUID uuid) {

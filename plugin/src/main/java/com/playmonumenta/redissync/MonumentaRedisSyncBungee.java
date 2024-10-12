@@ -2,6 +2,7 @@ package com.playmonumenta.redissync;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -50,6 +51,7 @@ public class MonumentaRedisSyncBungee extends Plugin {
 		int ticksPerPlayerAutosave = -1;
 		boolean savingDisabled = true;
 		boolean scoreboardCleanupEnabled = false;
+		HashSet<String> globalScoreNames = new HashSet<>(config.getStringList("global_score_names"));
 
 		String level = config.getString("log_level", "INFO").toLowerCase();
 		switch (level) {
@@ -66,7 +68,7 @@ public class MonumentaRedisSyncBungee extends Plugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new ConfigAPI(getLogger(), redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new ConfigAPI(getLogger(), redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled, globalScoreNames);
 	}
 
 	public void setLogLevel(Level level) {

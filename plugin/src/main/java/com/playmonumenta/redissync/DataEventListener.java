@@ -370,6 +370,7 @@ public class DataEventListener implements Listener {
 		commands.multi();
 		RedisFuture<String> pluginDataFuture = commands.lindex(PlayerProfileManager.getRedisPluginDataPath(uuid), 0);
 		RedisFuture<String> scoreFuture = commands.lindex(PlayerProfileManager.getRedisScoresPath(uuid), 0);
+		RedisFuture<String> globalScoreFuture = commands.lindex(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), 0);
 		RedisFuture<Map<String, String>> shardDataFuture = commands.hgetall(PlayerProfileManager.getRedisPerShardDataPath(uuid));
 		commands.exec();
 
@@ -395,7 +396,7 @@ public class DataEventListener implements Listener {
 			}
 
 			/* Load scoreboards */
-			final String scoreData = scoreFuture.get();
+			final String scoreData = new Gson().toJson(PlayerProfileManager.getScores(globalScoreFuture.get(), scoreFuture.get()));
 			mLogger.fine("Scoreboard data loaded for player=" + player.getName());
 			mLogger.finest(() -> "Score data:" + scoreData);
 			if (scoreData != null) {
@@ -640,9 +641,9 @@ public class DataEventListener implements Listener {
 			String scoreboardData = mGson.toJson(mAdapter.getPlayerScoresAsJson(player.getName(), Bukkit.getScoreboardManager().getMainScoreboard()));
 			mLogger.fine(() -> "Scoreboard saving took " + (System.currentTimeMillis() - scoreStartTime) + " milliseconds on main thread");
 			mLogger.finest(() -> "Data:" + scoreboardData);
-			String scorePath = PlayerProfileManager.getRedisScoresPath(uuid);
-			commands.lpush(scorePath, scoreboardData);
-			commands.ltrim(scorePath, 0, ConfigAPI.getHistoryAmount());
+			PlayerProfileManager.saveScores2(uuid, PlayerProfileManager.getProfileIndex(uuid), scoreboardData, commands);
+			commands.ltrim(PlayerProfileManager.getRedisScoresPath(uuid), 0, ConfigAPI.getHistoryAmount());
+			commands.ltrim(MonumentaRedisSyncAPI.getRedisGlobalScoresPath(uuid), 0, ConfigAPI.getHistoryAmount());
 
 			futures.add(commands.exec()); /* MULTI > */
 		} catch (IOException ex) {

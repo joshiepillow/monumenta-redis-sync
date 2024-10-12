@@ -4,6 +4,8 @@ import com.playmonumenta.redissync.adapters.VersionAdapter;
 import com.playmonumenta.redissync.commands.*;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -132,6 +134,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 		int ticksPerPlayerAutosave = config.getInt("ticks_per_player_autosave", 6060);
 		boolean savingDisabled = config.getBoolean("saving_disabled", false);
 		boolean scoreboardCleanupEnabled = config.getBoolean("scoreboard_cleanup_enabled", true);
+		Set<String> globalScoresList = new HashSet<>(config.getStringList("global_score_names"));
 
 		String level = config.getString("log_level", "INFO").toLowerCase();
 		switch (level) {
@@ -148,7 +151,7 @@ public class MonumentaRedisSync extends JavaPlugin {
 				setLogLevel(Level.INFO);
 		}
 
-		new ConfigAPI(getLogger(), redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled);
+		new ConfigAPI(getLogger(), redisHost, redisPort, serverDomain, shardName, historyAmount, ticksPerPlayerAutosave, savingDisabled, scoreboardCleanupEnabled, globalScoresList);
 	}
 
 	public void setLogLevel(Level level) {
